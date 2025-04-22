@@ -3,7 +3,7 @@
 import { Component, ReactNode, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import Toast from '@/components/Toast';
+import Toast from '../../components/Toast';
 
 export const dynamic = 'force-dynamic';
 
