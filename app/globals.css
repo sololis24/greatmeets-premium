@@ -1,0 +1,166 @@
+/* === Tailwind Imports (must come first) === */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Optional: Fonts from Google === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap');
+
+/* === Theme Variables === */
+:root {
+  --foreground: #007778; /* Dark teal text */
+  --accent: #ff7900; /* Bright orange */
+  --secondary: #4b9ca8; /* Muted blue */
+  --white: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --accent: #ff7900;
+    --secondary: #4b9ca8;
+  }
+}
+
+/* === Global Styles === */
+body {
+  background-color: var(--white); /* ⬅️ Use plain white background */
+  color: var(--foreground);
+  font-family: 'Poppins', 'Inter', Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+/* === Animations === */
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.pulse-slow {
+  animation: pulse-slow 2s infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.4s ease-out forwards;
+}
+
+/* === Toast Notification === */
+.toast {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--accent);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  animation: slide-down 0.4s ease-out forwards, fade-out 0.8s ease-out 2.5s forwards;
+}
+
+.toast-message {
+  font-size: 14px;
+}
+
+.close-toast {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 10px;
+}
+
+/* === Utility Classes (Optional) === */
+.container-center {
+  @apply flex flex-col items-center justify-center min-h-screen p-6;
+}
+
+/* === Buttons === */
+.button-primary {
+  @apply bg-[color:var(--accent)] text-white font-bold py-2 px-6 rounded-full hover:opacity-90 transition;
+}
+
+.button-secondary {
+  @apply bg-[color:var(--foreground)] text-white font-semibold py-2 px-6 rounded-full hover:opacity-80 transition;
+}
+
+/* === Cards (e.g. forms, results) === */
+.card {
+  @apply bg-white text-[color:var(--foreground)] rounded-2xl shadow-lg p-6 w-full max-w-md space-y-4;
+  .card::after {
+    content: '';
+    display: block;
+    height: 6px;
+    margin-top: 1rem;
+    width: 100%;
+    background: linear-gradient(to right, #00cfc8, #00b0f0);
+    border-radius: 9999px;
+    opacity: 0.6;
+  }
+  
+}
+
+/* === Labels and Subtext === */
+.label {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.subtext {
+  color: var(--secondary);
+  font-size: 0.875rem; /* text-sm */
+}
+
+/* Red border for empty fields */
+input.error, textarea.error {
+  border: 2px solid red;
+}
+
+
+/* === Softer Vibration Effect (Shake) === */
+@keyframes smooth-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }   /* Reduced the movement */
+  50% { transform: translateX(1px); }     /* Reduced the movement */
+  75% { transform: translateX(-1px); }    /* Reduced the movement */
+  100% { transform: translateX(0); }
+}
+
+.group:hover .group-hover\:animate-shake {
+  animation: smooth-shake 0.3s ease;   /* Reduced the intensity by using 'ease' */
+  animation-iteration-count: 1;
+}
