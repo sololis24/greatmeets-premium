@@ -177,10 +177,11 @@ export default function HomePage() {
   initial={{ opacity: 0, y: 30 }}
   animate={{ opacity: 1, y: 0 }}
   transition={{ duration: 0.5 }}
-  className="bg-white px-6 py-10 rounded-2xl shadow-2xl mx-auto flex flex-col gap-6 min-h-[420px] text-[14px]"
+  className="bg-white px-6 py-10 rounded-2xl shadow-2xl flex flex-col gap-6 min-h-[420px] text-[14px]"
   style={{
     width: '100%',
-    maxWidth: '480px', // 🛠️ Exact control
+    maxWidth: '400px', // sweet spot
+    margin: '0 auto',
   }}
 >
 
