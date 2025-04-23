@@ -23,17 +23,35 @@
   }
 }
 
+/* === Full Height Fix === */
+html, body {
+  min-height: 100vh;
+}
+
 /* === Global Styles === */
 body {
-  background-color: var(--white); /* ⬅️ Use plain white background */
+  background-color: var(--white);
   color: var(--foreground);
   font-family: 'Poppins', 'Inter', Arial, Helvetica, sans-serif;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.5s ease, color 0.5s ease;
+}
+
+/* === Input Font Reset === */
+input,
+textarea {
+  font-size: 1rem;
+  color: #111827;
+}
+
+/* === Placeholder Font Reset === */
+::placeholder {
+  font-size: 1rem !important;
+  color: #9ca3af !important;
+  opacity: 1;
 }
 
 /* === Animations === */
@@ -89,6 +107,10 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 9999;
   animation: slide-down 0.4s ease-out forwards, fade-out 0.8s ease-out 2.5s forwards;
+  white-space: nowrap;
+  max-width: 90vw;
+  width: max-content;
+  text-align: center;
 }
 
 .toast-message {
@@ -104,34 +126,63 @@ body {
   margin-left: 10px;
 }
 
-/* === Utility Classes (Optional) === */
+/* === Utility Classes (manually defined) === */
 .container-center {
-  @apply flex flex-col items-center justify-center min-h-screen p-6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
 }
 
 /* === Buttons === */
 .button-primary {
-  @apply bg-[color:var(--accent)] text-white font-bold py-2 px-6 rounded-full hover:opacity-90 transition;
+  background-color: var(--accent);
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+.button-primary:hover {
+  opacity: 0.9;
 }
 
 .button-secondary {
-  @apply bg-[color:var(--foreground)] text-white font-semibold py-2 px-6 rounded-full hover:opacity-80 transition;
+  background-color: var(--foreground);
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+.button-secondary:hover {
+  opacity: 0.8;
 }
 
-/* === Cards (e.g. forms, results) === */
+/* === Cards === */
 .card {
-  @apply bg-white text-[color:var(--foreground)] rounded-2xl shadow-lg p-6 w-full max-w-md space-y-4;
-  .card::after {
-    content: '';
-    display: block;
-    height: 6px;
-    margin-top: 1rem;
-    width: 100%;
-    background: linear-gradient(to right, #00cfc8, #00b0f0);
-    border-radius: 9999px;
-    opacity: 0.6;
-  }
-  
+  background-color: white;
+  color: var(--foreground);
+  border-radius: 1rem;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.card::after {
+  content: '';
+  display: block;
+  height: 6px;
+  margin-top: 1rem;
+  width: 100%;
+  background: linear-gradient(to right, #00cfc8, #00b0f0);
+  border-radius: 9999px;
+  opacity: 0.6;
 }
 
 /* === Labels and Subtext === */
@@ -142,25 +193,68 @@ body {
 
 .subtext {
   color: var(--secondary);
-  font-size: 0.875rem; /* text-sm */
+  font-size: 0.875rem;
 }
 
-/* Red border for empty fields */
-input.error, textarea.error {
+/* === Error Border === */
+input.error,
+textarea.error {
   border: 2px solid red;
 }
 
-
-/* === Softer Vibration Effect (Shake) === */
+/* === Softer Vibration Effect === */
 @keyframes smooth-shake {
   0% { transform: translateX(0); }
-  25% { transform: translateX(-1px); }   /* Reduced the movement */
-  50% { transform: translateX(1px); }     /* Reduced the movement */
-  75% { transform: translateX(-1px); }    /* Reduced the movement */
+  25% { transform: translateX(-1px); }
+  50% { transform: translateX(1px); }
+  75% { transform: translateX(-1px); }
   100% { transform: translateX(0); }
 }
 
 .group:hover .group-hover\:animate-shake {
-  animation: smooth-shake 0.3s ease;   /* Reduced the intensity by using 'ease' */
+  animation: smooth-shake 0.3s ease;
   animation-iteration-count: 1;
 }
+
+.success-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(to bottom, #ccfbf1, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  z-index: 10;
+  overflow: visible; /* or remove the line entirely */
+}
+
+.card-wide {
+  background-color: white;
+  padding: 3rem 4rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 1800px; /* or 1100px if you want more space */
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+  gap: 1.5rem;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .card-wide {
+    padding: 2rem;
+    max-width: 90vw;
+  }
+}
+
+

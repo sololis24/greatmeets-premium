@@ -48,24 +48,32 @@ export default function Toast({
   const backgroundGradient = typeGradients[type] || typeGradients.success;
 
   const positionClasses =
-    position === 'bottom'
-      ? 'bottom-6 right-6 left-auto transform-none'
-      : 'top-6 left-1/2 transform -translate-x-1/2';
+  position === 'bottom'
+    ? 'bottom-6 right-6 left-auto'
+    : 'top-6 left-1/2 transform -translate-x-1/2';
 
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0, y: -20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.8 }}
-          transition={{ duration: 0.4 }}
-          className={`fixed ${positionClasses} text-white px-10 py-5 rounded-2xl shadow-xl border border-white/20 z-50 backdrop-blur-md bg-gradient-to-r ${backgroundGradient} bg-opacity-70 ${className}`}
-          style={style}
-        >
-          <div className="text-center font-semibold text-lg tracking-wide">{message}</div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+    return (
+      <AnimatePresence>
+        {show && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.8 }}
+            transition={{ duration: 0.4 }}
+            className={`fixed ${position === 'bottom' ? 'bottom-6' : 'top-6'} inset-x-0 mx-auto z-[9999] w-fit max-w-xs px-6 py-3 text-white text-center rounded-xl shadow-2xl bg-gradient-to-r ${backgroundGradient} ${className}`}
+            style={{
+              ...style,
+              pointerEvents: 'none', // prevent blocking clicks
+              // border: '2px solid lime', // uncomment for visual debug
+            }}
+          >
+            <div className="text-center font-semibold text-lg tracking-wide">
+              {message}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+    
+    
 }

@@ -29,9 +29,9 @@ export default function OrganizerForm({
     str.replace(/\b\w/g, (char) => char.toUpperCase());
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 py-10">
+    <div className="space-y-6 text-base"> {/* Set base text size */}
       <h1
-        className="text-3xl sm:text-4xl font-extrabold mb-6 text-transparent bg-clip-text tracking-tight text-center"
+        className="text-5xl lg:text-6xl font-extrabold mb-10 text-transparent bg-clip-text tracking-wide leading-tight hover:text-teal-500 transition-all duration-300 ease-in-out text-center"
         style={{
           background: 'linear-gradient(45deg, #34d399, #4f46e5, #6366f1)',
           backgroundClip: 'text',
@@ -56,51 +56,38 @@ export default function OrganizerForm({
         }
       `}</style>
 
-      <div className="space-y-6">
+      <input
+        type="text"
+        placeholder="Your Great Meet Name"
+        className={`w-full p-4 border border-transparent border-b border-gray-300 rounded-lg bg-gray-50 text-base transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${title ? 'not-italic' : 'italic'}`}
+        value={title}
+        onChange={(e) => setTitle(capitalizeWords(e.target.value))}
+      />
+
+      <div className="flex flex-col md:flex-row gap-4">
         <input
           type="text"
-          placeholder="Your Great Meet Name"
-          className={`w-full px-4 py-2 text-sm border border-transparent border-b border-gray-300 rounded-md bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${
-            title ? 'not-italic' : 'italic'
-          }`}
-          value={title}
-          onChange={(e) => setTitle(capitalizeWords(e.target.value))}
+          placeholder="First Name"
+          className={`w-full p-4 border border-transparent border-b border-gray-300 rounded-lg bg-gray-50 text-base transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerFirstName ? 'not-italic' : 'italic'}`}
+          value={organizerFirstName}
+          onChange={(e) => setOrganizerFirstName(capitalizeWords(e.target.value))}
         />
-
-        <div className="flex flex-col md:flex-row gap-3">
-          <input
-            type="text"
-            placeholder="First Name"
-            className={`w-full px-4 py-2 text-sm border border-transparent border-b border-gray-300 rounded-md bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${
-              organizerFirstName ? 'not-italic' : 'italic'
-            }`}
-            value={organizerFirstName}
-            onChange={(e) =>
-              setOrganizerFirstName(capitalizeWords(e.target.value))
-            }
-          />
         <input
-  type="text"
-  placeholder="Your Great Meet Name"
-  className={`w-full px-4 py-2 text-sm placeholder:text-sm placeholder:text-gray-400 border border-transparent border-b border-gray-300 rounded-md bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${
-    title ? 'not-italic' : 'italic'
-  }`}
-  value={title}
-  onChange={(e) => setTitle(capitalizeWords(e.target.value))}
-/>
-
-        </div>
-
-        <input
-          type="email"
-          placeholder="Your Email"
-          className={`w-full px-4 py-2 text-sm border border-transparent border-b border-gray-300 rounded-md bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${
-            organizerEmail ? 'not-italic' : 'italic'
-          }`}
-          value={organizerEmail}
-          onChange={(e) => setOrganizerEmail(e.target.value)}
+          type="text"
+          placeholder="Last Name"
+          className={`w-full p-4 border border-transparent border-b border-gray-300 rounded-lg bg-gray-50 text-base transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerLastName ? 'not-italic' : 'italic'}`}
+          value={organizerLastName}
+          onChange={(e) => setOrganizerLastName(capitalizeWords(e.target.value))}
         />
       </div>
+
+      <input
+        type="email"
+        placeholder="Your Email"
+        className={`w-full p-4 border border-transparent border-b border-gray-300 rounded-lg bg-gray-50 text-base transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerEmail ? 'not-italic' : 'italic'}`}
+        value={organizerEmail}
+        onChange={(e) => setOrganizerEmail(e.target.value)}
+      />
     </div>
   );
 }

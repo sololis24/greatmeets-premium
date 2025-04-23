@@ -120,9 +120,9 @@ export default function HorizontalTimeScroller({
   return (
     <div
       ref={scrollContainerRef}
-      className="space-y-6 font-sans text-lg md:text-xl overflow-y-auto"
+      className="space-y-6 font-sans text-base md:text-xl overflow-y-auto"
     >
-      <div className="border-t border-gray-200 mt-6 pt-4"></div>
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
       <h2 className="text-xl font-bold text-gray-700 mb-4">Pick a Date</h2>
 
       {/* Date Scroll Ribbon */}
@@ -164,153 +164,157 @@ export default function HorizontalTimeScroller({
 
       {/* AI Button */}
       <motion.button
-        type="button"
-        onClick={handleAIButton}
-        className="w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-teal-400 
-               hover:from-indigo-600 hover:via-blue-600 hover:to-teal-500 
-               text-white font-bold py-3 rounded-full transition mt-4 shadow-lg"
+  type="button"
+  onClick={handleAIButton}
+  className="w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-teal-400 
+             hover:from-indigo-600 hover:via-blue-600 hover:to-teal-500 
+             text-white text-lg font-semibold py-4 rounded-full transition mt-4 shadow-lg"
+>
+  Find The Best Time With AI ✨
+</motion.button>
+
+
+{showTimeline && (
+  <>
+    <div ref={scrollToAISuggestionsRef} className="scroll-mt-24">
+      <AnimatePresence>
+        {selectedTimes.length === 0 && (
+          <motion.div
+            key="helper"
+            initial={{ opacity: 0, scaleY: 0.95 }}
+            animate={{ opacity: 1, scaleY: 1 }}
+            exit={{ opacity: 0, scaleY: 0.95 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="w-full flex justify-center items-center origin-top pt-2 pb-2"
+          >
+            <p className="text-lg text-indigo-600 text-center font-semibold bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-full shadow-md flex items-center gap-2 leading-normal">
+              Here's what AI found — Choose a time! ✨ 
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="overflow-x-auto" ref={containerRef}>
+        <div className="inline-block min-w-[1000px]">
+          <table className="table-auto w-full text-base text-gray-700 border-collapse">
+            <thead>
+              <tr>
+                <th
+                  colSpan={blocks.length + 1}
+                  className="text-center py-4 text-xl font-semibold text-gray-700 bg-white sticky top-0 z-10"
+                ></th>
+              </tr>
+            </thead>
+            <tbody>
+              {timeZones.map((tz) => (
+                <tr key={tz}>
+                  <td className="sticky left-0 z-10 bg-white px-4 py-3 font-medium text-gray-600 border-r border-gray-200 whitespace-nowrap">
+                    {tz}
+                  </td>
+                  {blocks.map((i) => {
+                    const hour = Math.floor(i / 4);
+                    const minute = (i % 4) * 15;
+                    const utcDate = new Date(Date.UTC(
+                      selectedDate.getFullYear(),
+                      selectedDate.getMonth(),
+                      selectedDate.getDate(),
+                      hour,
+                      minute
+                    ));
+                    const isoTime = utcDate.toISOString();
+                    const timeString = formatInTimeZone(utcDate, tz, 'HH:mm');
+                    const isHovered = hoveredBlock === i;
+                    const isSelected = selectedTimes.includes(isoTime);
+                    const isSuggested = isAISuggestion(isoTime);
+
+                    return (
+                      <td
+                        key={i}
+                        data-time={isoTime}
+                        className={`relative min-w-[72px] px-5 py-3 text-base text-center border border-gray-100 cursor-pointer transition-colors duration-200 rounded-base
+                          ${isHovered ? 'bg-indigo-50 hover:ring-2 ring-indigo-300' : ''}
+                          ${isSuggested ? 'bg-gradient-to-br from-blue-100 to-indigo-100 font-medium' : ''}
+                          ${isSelected ? 'bg-indigo-100 text-indigo-800 font-semibold ring-2 ring-indigo-400 shadow-sm' : ''}
+                          hover:shadow-inner`}
+                        onClick={() => {
+                          setSelectedTimeISO(isoTime);
+                          onSelectTime(isoTime);
+
+                          setTimeout(() => {
+                            scrollToConfirmationRef?.current?.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'start',
+                            });
+                          }, 100);
+                        }}
+                        onMouseEnter={() => setHoveredBlock(i)}
+                        onMouseLeave={() => setHoveredBlock(null)}
+                      >
+                        <div className="relative flex items-center justify-center w-full h-full">
+                          {timeString}
+                          <AnimatePresence>
+                            {justSuggestedTimes.includes(isoTime) && (
+                              <motion.div
+                                key={isoTime}
+                                initial={{ width: '0%' }}
+                                animate={{ width: '100%' }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.7 }}
+                                className="absolute top-0 left-0 h-[3px] bg-indigo-400 rounded-t z-20"
+                              />
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </>
+)}
+
+{selectedTimes.length > 0 && (
+  <div ref={scrollToConfirmationRef} className="mt-6 space-y-4 scroll-mt-24">
+    {selectedTimes.map((iso) => (
+      <div
+        key={iso}
+        className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex justify-between items-start"
       >
-        Find The Best Time With AI ✨
-      </motion.button>
+        <div className="space-y-1 text-base text-gray-700">
+          <h3 className="font-semibold mb-1 text-gray-800 text-base">
+            📌 Your Great Meet Time:
+          </h3>
+          {timeZones.map((tz) => (
+            <p key={tz} className="text-base">
+              {tz}: {formatInTimeZone(new Date(iso), tz, 'eee, MMM d, HH:mm')}
+            </p>
+          ))}
+        </div>
 
-      {showTimeline && (
-        <>
-          <div ref={scrollToAISuggestionsRef} className="scroll-mt-24">
-            <AnimatePresence>
-              {selectedTimes.length === 0 && (
-                <motion.div
-                  key="helper"
-                  initial={{ opacity: 0, scaleY: 0.95 }}
-                  animate={{ opacity: 1, scaleY: 1 }}
-                  exit={{ opacity: 0, scaleY: 0.95 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  className="w-full flex justify-center items-center origin-top pt-2 pb-2"
-                >
-                  <p className="text-base text-indigo-600 text-center font-semibold bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-full shadow-md flex items-center gap-2 leading-normal">
-                    Here's what AI found — Choose a time! ✨ 
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            setSelectedTimeISO(null);
+            onSelectTime(null);
 
-            <div className="overflow-x-auto" ref={containerRef}>
-              <div className="inline-block min-w-[1000px]">
-                <table className="table-auto w-full text-base md:text-base text-gray-700 border-collapse">
-                  <thead>
-                    <tr>
-                      <th
-                        colSpan={blocks.length + 1}
-                        className="text-center py-4 text-xl font-semibold text-gray-700 bg-white sticky top-0 z-10"
-                      ></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timeZones.map((tz) => (
-                      <tr key={tz}>
-                        <td className="sticky left-0 z-10 bg-white px-4 py-3 font-medium text-gray-600 border-r border-gray-200 whitespace-nowrap">
-                          {tz}
-                        </td>
-                        {blocks.map((i) => {
-                          const hour = Math.floor(i / 4);
-                          const minute = (i % 4) * 15;
-                          const utcDate = new Date(Date.UTC(
-                            selectedDate.getFullYear(),
-                            selectedDate.getMonth(),
-                            selectedDate.getDate(),
-                            hour,
-                            minute
-                          ));
-                          const isoTime = utcDate.toISOString();
-                          const timeString = formatInTimeZone(utcDate, tz, 'HH:mm');
-                          const isHovered = hoveredBlock === i;
-                          const isSelected = selectedTimes.includes(isoTime);
-                          const isSuggested = isAISuggestion(isoTime);
+            setTimeout(() => {
+              scrollToAISuggestionsRef?.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }, 300);
+          }}
+          className="text-indigo-600 hover:text-white border border-indigo-300 hover:bg-indigo-500 transition-all duration-200 px-4 py-1.5 rounded-full font-semibold text-base shadow-sm"
+        >
+          Change Time
+        </button>
 
-                          return (
-                            <td
-                              key={i}
-                              data-time={isoTime}
-                              className={`relative min-w-[72px] px-5 py-3 text-sm text-center border border-gray-100 cursor-pointer transition-colors duration-200 rounded-lg
-                                ${isHovered ? 'bg-indigo-50 hover:ring-2 ring-indigo-300' : ''}
-                                ${isSuggested ? 'bg-gradient-to-br from-blue-100 to-indigo-100 font-medium' : ''}
-                                ${isSelected ? 'bg-indigo-100 text-indigo-800 font-semibold ring-2 ring-indigo-400 shadow-sm' : ''}
-                                hover:shadow-inner`}
-                              onClick={() => {
-                                setSelectedTimeISO(isoTime);
-                                onSelectTime(isoTime);
-
-                                setTimeout(() => {
-                                  scrollToConfirmationRef?.current?.scrollIntoView({
-                                    behavior: 'smooth',
-                                    block: 'start',
-                                  });
-                                }, 100);
-                              }}
-                              onMouseEnter={() => setHoveredBlock(i)}
-                              onMouseLeave={() => setHoveredBlock(null)}
-                            >
-                              <div className="relative flex items-center justify-center w-full h-full">
-                                {timeString}
-                                <AnimatePresence>
-                                  {justSuggestedTimes.includes(isoTime) && (
-                                    <motion.div
-                                      key={isoTime}
-                                      initial={{ width: '0%' }}
-                                      animate={{ width: '100%' }}
-                                      exit={{ opacity: 0 }}
-                                      transition={{ duration: 0.7 }}
-                                      className="absolute top-0 left-0 h-[3px] bg-indigo-400 rounded-t z-20"
-                                    />
-                                  )}
-                                </AnimatePresence>
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {selectedTimes.length > 0 && (
-        <div ref={scrollToConfirmationRef} className="mt-6 space-y-4 scroll-mt-24">
-          {selectedTimes.map((iso) => (
-            <div
-              key={iso}
-              className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex justify-between items-start"
-            >
-              <div className="space-y-1 text-base text-gray-700">
-                <h3 className="font-semibold mb-1 text-gray-800">📌 Your Great Meet Time:</h3>
-                {timeZones.map((tz) => (
-                  <p key={tz}>
-                    {tz}: {formatInTimeZone(new Date(iso), tz, 'eee, MMM d, HH:mm')}
-                  </p>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setSelectedTimeISO(null);
-                  onSelectTime(null);
-
-                  setTimeout(() => {
-                    scrollToAISuggestionsRef?.current?.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'start',
-                    });
-                  }, 300);
-                }}
-                className="text-indigo-600 hover:text-white border border-indigo-300 hover:bg-indigo-500 transition-all duration-200 px-4 py-1.5 rounded-full font-semibold text-base shadow-sm"
-              >
-                Change Time
-              </button>
             </div>
           ))}
         </div>

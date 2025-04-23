@@ -23,6 +23,10 @@ export default function FinalButtons({
       transition={{ duration: 0.5 }}
       className="flex flex-col gap-6 mt-14 pb-14 relative"
     >
+      {/* ✨ Gradient divider for visual separation */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent mt-1 mb-5" />
+
+
       <motion.button
         type="button"
         onClick={handleSendDirectInvite}
@@ -30,7 +34,7 @@ export default function FinalButtons({
         initial={{ y: 10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-        className="group w-full bg-gradient-to-r from-purple-500 via-violet-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-4 rounded-full transition-transform duration-300 shadow-md text-center"
+        className="group w-full bg-gradient-to-r from-purple-500 via-violet-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-lg font-semibold py-4 rounded-full transition-transform duration-300 shadow-md text-center mt-1"
       >
         <span className="group-hover:hidden transition-opacity duration-300">
           Send Your GreatMeet
@@ -41,4 +45,4 @@ export default function FinalButtons({
       </motion.button>
     </motion.div>
   );
-}
+} 

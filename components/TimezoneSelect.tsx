@@ -130,11 +130,30 @@ export default function TimezoneSelect({ value, onChange }: Props) {
       className="text-black"
       classNamePrefix="react-select"
       styles={{
+        control: (base) => ({
+          ...base,
+          fontSize: '16px',
+        }),
         singleValue: (base) => ({
           ...base,
+          fontSize: '16px',
           fontStyle: 'italic',
         }),
+        placeholder: (base) => ({
+          ...base,
+          fontSize: '16px',
+          fontStyle: 'italic',
+        }),
+        option: (base) => ({
+          ...base,
+          fontSize: '16px',
+        }),
+        menu: (base) => ({
+          ...base,
+          fontSize: '16px',
+        }),
       }}
+      
     />
   );
 }

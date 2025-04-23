@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -47,7 +47,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
 
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const uniqueTimeZones = [timeZone, ...new Set(invitees.map((i) => i.timezone))].filter(Boolean);
+  const uniqueTimeZones = [
+    timeZone,
+    ...new Set(invitees.map((i) => i.timezone)),
+  ].filter(Boolean);
 
   useEffect(() => {
     if (invitees.length > 0 && scrollerRef.current) {
@@ -75,7 +78,8 @@ export default function HomePage() {
     }
 
     const errors: Record<string, string> = {};
-    if (!inviteeFirstName.trim() || !inviteeLastName.trim()) errors.name = 'First and last name are required';
+    if (!inviteeFirstName.trim() || !inviteeLastName.trim())
+      errors.name = 'First and last name are required';
     if (!newInviteeEmail.trim()) errors.email = 'Email is required';
     if (!newInviteeTimezone) errors.timezone = 'Timezone is required';
 
@@ -164,85 +168,88 @@ export default function HomePage() {
   return (
     <main
       ref={scrollToTopRef}
-      className="min-h-screen flex items-center justify-center bg-gray-100 text-black"
-    >
-      <Toast
-        message={toastMessage}
-        visible={toastVisible}
-        onClose={() => setToastVisible(false)}
-        type={toastType}
-        position="top"
-      />
+      className="min-h-screen flex items-center justify-center bg-gray-100 text-black">
+  <div className="w-full max-w-4xl mx-auto px-4 relative"> {/* this is key! */}
+      {/* ✅ Toast anchors to this card-specific relative wrapper */}
+      <div className="relative">
+        <Toast
+          message={toastMessage}
+          visible={toastVisible}
+          onClose={() => setToastVisible(false)}
+          type={toastType}
+          position="top"
+        />
 
-<motion.div
-  initial={{ opacity: 0, y: 30 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5 }}
-  className="w-full max-w-[420px] mx-auto px-4 py-10 bg-white rounded-2xl shadow-2xl text-[14px] flex flex-col gap-6 min-h-[520px]"
->
-
-        <form className="space-y-6">
-          <OrganizerForm
-            title={title}
-            setTitle={setTitle}
-            organizerFirstName={organizerFirstName}
-            setOrganizerFirstName={setOrganizerFirstName}
-            organizerLastName={organizerLastName}
-            setOrganizerLastName={setOrganizerLastName}
-            organizerEmail={organizerEmail}
-            setOrganizerEmail={setOrganizerEmail}
-            organizerErrors={organizerErrors}
-          />
-
-          {title && organizerFirstName && organizerLastName && organizerEmail && (
-            <InviteeForm
-              inviteeFirstName={inviteeFirstName}
-              setInviteeFirstName={setInviteeFirstName}
-              inviteeLastName={inviteeLastName}
-              setInviteeLastName={setInviteeLastName}
-              newInviteeEmail={newInviteeEmail}
-              setNewInviteeEmail={setNewInviteeEmail}
-              newInviteeTimezone={newInviteeTimezone}
-              setNewInviteeTimezone={setNewInviteeTimezone}
-              handleAddInvitee={handleAddInvitee}
-              inviteeErrors={inviteeErrors}
-              invitees={invitees}
-              handleRemoveInvitee={handleRemoveInvitee}
-            />
-          )}
-
-          {invitees.length > 0 && (
-            <div ref={scrollerRef} className="scroll-mt-20">
-              <HorizontalTimeScroller
-                timeZones={uniqueTimeZones}
-                aiSuggestions={[]}
-                selectedTimes={selectedTimes}
-                onSelectTime={(iso) => {
-                  if (iso) {
-                    setSelectedTimes([iso]);
-                    setToastMessage('Time selected');
-                    setToastType('success');
-                    setToastVisible(true);
-                  } else {
-                    setSelectedTimes([]);
-                  }
-                }}
-                scrollToAISuggestionsRef={scrollToAISuggestionsRef}
-                scrollToConfirmationRef={scrollToConfirmationRef}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white px-8 py-12 rounded-2xl shadow-2xl w-full flex flex-col gap-8 min-h-[470px] text-[14px]"
+          >
+            <form className="flex-1 space-y-6">
+              <OrganizerForm
+                title={title}
+                setTitle={setTitle}
+                organizerFirstName={organizerFirstName}
+                setOrganizerFirstName={setOrganizerFirstName}
+                organizerLastName={organizerLastName}
+                setOrganizerLastName={setOrganizerLastName}
+                organizerEmail={organizerEmail}
+                setOrganizerEmail={setOrganizerEmail}
+                organizerErrors={organizerErrors}
               />
-            </div>
-          )}
 
-          {selectedTimes.length > 0 && (
-            <div ref={scrollDownRef} className="scroll-mt-24">
-              <FinalButtons
-                selectedTimes={selectedTimes}
-                handleSendDirectInvite={handleSendDirectInvite}
-              />
-            </div>
-          )}
-        </form>
-      </motion.div>
+              {title && organizerFirstName && organizerLastName && organizerEmail && (
+                <InviteeForm
+                  inviteeFirstName={inviteeFirstName}
+                  setInviteeFirstName={setInviteeFirstName}
+                  inviteeLastName={inviteeLastName}
+                  setInviteeLastName={setInviteeLastName}
+                  newInviteeEmail={newInviteeEmail}
+                  setNewInviteeEmail={setNewInviteeEmail}
+                  newInviteeTimezone={newInviteeTimezone}
+                  setNewInviteeTimezone={setNewInviteeTimezone}
+                  handleAddInvitee={handleAddInvitee}
+                  inviteeErrors={inviteeErrors}
+                  invitees={invitees}
+                  handleRemoveInvitee={handleRemoveInvitee}
+                />
+              )}
+
+              {invitees.length > 0 && (
+                <div ref={scrollerRef} className="scroll-mt-20">
+                  <HorizontalTimeScroller
+                    timeZones={uniqueTimeZones}
+                    aiSuggestions={[]}
+                    selectedTimes={selectedTimes}
+                    onSelectTime={(iso) => {
+                      if (iso) {
+                        setSelectedTimes([iso]);
+                        setToastMessage('Time selected');
+                        setToastType('success');
+                        setToastVisible(true);
+                      } else {
+                        setSelectedTimes([]);
+                      }
+                    }}
+                    scrollToAISuggestionsRef={scrollToAISuggestionsRef}
+                    scrollToConfirmationRef={scrollToConfirmationRef}
+                  />
+                </div>
+              )}
+
+              {selectedTimes.length > 0 && (
+                <div ref={scrollDownRef} className="scroll-mt-24">
+                  <FinalButtons
+                    selectedTimes={selectedTimes}
+                    handleSendDirectInvite={handleSendDirectInvite}
+                  />
+                </div>
+              )}
+            </form>
+          </motion.div>
+        </div>
+      </div>
     </main>
   );
 }

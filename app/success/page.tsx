@@ -39,81 +39,88 @@ function ClientSuccessPage() {
       navigator.clipboard.writeText(inviteLink).then(() => {
         setCopied(true);
         setToastVisible(true);
-        setTimeout(() => setCopied(false), 2000);
+  
+        // 🔥 Correct place to reset toast
+        setTimeout(() => {
+          setCopied(false);
+          setToastVisible(false); // ✅ This line was missing!
+        }, 2500);
       });
     }
   };
-
+  
   const handleCreateAnotherMeet = () => {
     router.push('/');
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-8 space-y-8 bg-gradient-to-b from-teal-100 via-white to-white">
-      {toastVisible && (
+    <div className="success-page">
+     <main className="success-page-main relative">
+        {/* ✅ Always render Toast */}
         <Toast
-          visible={true}
+          visible={toastVisible}
           message="Invite link copied to clipboard!"
           onClose={() => setToastVisible(false)}
+          type="success"
+          position="top"
         />
-      )}
-
-<motion.div
-  initial={{ opacity: 0, y: 30 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5 }}
-  className="bg-white px-6 py-10 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto flex flex-col gap-6 min-h-[450px] text-[14px]"
->
 
         <motion.div
-          initial={{ rotate: -15 }}
-          animate={{ rotate: [0, 20, -20, 10, -10, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="text-5xl"
-        >
-          🎉
-        </motion.div>
-
-        <motion.h1
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 leading-tight mb-1"
+          transition={{ duration: 0.5 }}
+          className="card-wide"
         >
-          Great Meet Created!
-        </motion.h1>
-
-        <p className="text-gray-600 text-lg mt-1">
-          Your invite was successfully sent.
-        </p>
-
-        <div className="flex flex-col gap-4">
-          <motion.button
-            onClick={handleCopyLink}
-            className="w-full min-w-[220px] px-6 py-3 bg-teal-500 text-white font-bold rounded-full transition-all duration-300 hover:bg-gradient-to-r hover:from-teal-400 hover:to-teal-600 focus:ring-4 focus:ring-teal-300"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <motion.div
+            initial={{ rotate: -15 }}
+            animate={{ rotate: [0, 20, -20, 10, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="text-5xl"
           >
-            <span className="inline-block w-full text-center">
+            🎉
+          </motion.div>
+
+          <div className="flex flex-col items-center text-center mb-8">
+            <motion.h1
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1 }}
+              className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 leading-tight"
+            >
+              Great Meet Created!
+            </motion.h1>
+
+            <p className="text-gray-600 text-lg font-normal mt-2">
+              Your invite was successfully sent.
+            </p>
+          </div>
+
+          <div className="w-full max-w-md mx-auto flex flex-col gap-4">
+            <motion.button
+              onClick={handleCopyLink}
+              className="w-full bg-teal-500 text-white font-bold py-4 rounded-full transition-all duration-300 hover:bg-gradient-to-r hover:from-teal-400 hover:to-teal-600 focus:ring-4 focus:ring-teal-300 shadow-md text-center"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               {copied ? 'Link Copied!' : 'Copy Invite Link'}
-            </span>
-          </motion.button>
+            </motion.button>
 
-          <motion.button
-            onClick={handleCreateAnotherMeet}
-            className="w-full px-6 py-3 border border-teal-500 text-teal-500 font-semibold rounded-full transition-all duration-300 hover:bg-teal-50 focus:outline-none focus:border-teal-700 focus:ring-0 active:bg-teal-100"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Create Another Great Meet
-          </motion.button>
-        </div>
+            <motion.button
+              onClick={handleCreateAnotherMeet}
+              className="w-full border border-teal-500 text-teal-500 font-semibold py-4 rounded-full hover:bg-teal-50 focus:outline-none focus:border-teal-700 shadow-md text-center"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Create Another Great Meet
+            </motion.button>
+          </div>
 
-        <p className="text-sm text-gray-400 pt-6">
-          Powered by <span className="font-bold text-teal-500">GreatMeets.ai</span> – Fast and Human Scheduling © 2025
-        </p>
-      </motion.div>
-    </main>
+          <p className="text-sm text-gray-400 pt-6">
+            Powered by <span className="font-bold text-teal-500">GreatMeets.ai</span> – Fast and Human Scheduling © 2025
+          </p>
+        </motion.div>
+      </main>
+    </div>
   );
 }
 
