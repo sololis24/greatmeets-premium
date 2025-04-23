@@ -174,12 +174,13 @@ export default function HomePage() {
         position="top"
       />
 
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md mx-auto px-4 py-10 bg-white rounded-2xl shadow-2xl text-[14px] flex flex-col gap-6"
-      >
+<motion.div
+  initial={{ opacity: 0, y: 30 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5 }}
+  className="w-full max-w-[420px] mx-auto px-4 py-10 bg-white rounded-2xl shadow-2xl text-[14px] flex flex-col gap-6 min-h-[520px]"
+>
+
         <form className="space-y-6">
           <OrganizerForm
             title={title}
