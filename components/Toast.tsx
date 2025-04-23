@@ -52,7 +52,7 @@ export default function Toast({
     ? 'bottom-6 right-6 left-auto'
     : 'top-6 left-1/2 transform -translate-x-1/2';
 
-    return (
+    return ( 
       <AnimatePresence>
         {show && (
           <motion.div
