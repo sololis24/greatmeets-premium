@@ -225,7 +225,7 @@ export default function HomePage() {
                     onSelectTime={(iso) => {
                       if (iso) {
                         setSelectedTimes([iso]);
-                        setToastMessage('Time selected');
+                        setToastMessage('Time Selected');
                         setToastType('success');
                         setToastVisible(true);
                       } else {

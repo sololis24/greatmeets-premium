@@ -39,10 +39,10 @@ export default function Toast({
   if (!visible && !show) return null;
 
   const typeGradients: Record<string, string> = {
-    success: 'from-blue-400 to-blue-600',
+    success: 'from-green-400 to-green-600',
     error: 'from-red-400 to-red-600',
     warning: 'from-yellow-400 to-yellow-600',
-    info: 'from-sky-400 to-blue-500',
+    info: 'from-indigo-400 to-purple-500',
   };
 
   const backgroundGradient = typeGradients[type] || typeGradients.success;
