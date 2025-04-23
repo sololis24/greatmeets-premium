@@ -29,9 +29,10 @@ export default function OrganizerForm({
     str.replace(/\b\w/g, (char) => char.toUpperCase());
 
   return (
-    <div className="space-y-4 max-w-sm mx-auto">
+    
+    <div className="space-y-6 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto px-4">
     <h1
-      className="text-2xl sm:text-3xl font-extrabold mb-6 text-transparent bg-clip-text tracking-tight text-center"
+      className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text tracking-tight text-center"
       style={{
         background: 'linear-gradient(45deg, #34d399, #4f46e5, #6366f1)',
         backgroundClip: 'text',
@@ -41,19 +42,21 @@ export default function OrganizerForm({
     >
       Create your GreatMeet
     </h1>
-      <style jsx>{`
-        @keyframes gradientMotion {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
+  
+    <style jsx>{`
+      @keyframes gradientMotion {
+        0% {
+          background-position: 0% 50%;
         }
-      `}</style>
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+    `}</style>
+  
 
       <input
         type="text"
