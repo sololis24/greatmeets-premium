@@ -58,12 +58,13 @@ function ClientSuccessPage() {
         />
       )}
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6 }}
-         className="bg-white px-6 py-10 rounded-2xl shadow-2xl w-full max-w-xl md:max-w-2xl mx-auto flex flex-col gap-8 min-h-[450px] text-[14px]"
-      >
+<motion.div
+  initial={{ opacity: 0, y: 30 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5 }}
+  className="bg-white px-6 py-10 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto flex flex-col gap-6 min-h-[450px] text-[14px]"
+>
+
         <motion.div
           initial={{ rotate: -15 }}
           animate={{ rotate: [0, 20, -20, 10, -10, 0] }}
