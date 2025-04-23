@@ -11,7 +11,7 @@ type OrganizerFormProps = {
   setOrganizerLastName: (val: string) => void;
   organizerEmail: string;
   setOrganizerEmail: (val: string) => void;
-  organizerErrors: Record<string, string>; // ✅ Now defined
+  organizerErrors: Record<string, string>;
 };
 
 export default function OrganizerForm({
@@ -29,9 +29,9 @@ export default function OrganizerForm({
     str.replace(/\b\w/g, (char) => char.toUpperCase());
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 max-w-sm mx-auto">
       <h1
-        className="text-4xl md:text-5xl font-extrabold mb-8 text-transparent bg-clip-text tracking-wide leading-tight text-center"
+        className="text-3xl font-extrabold mb-6 text-transparent bg-clip-text tracking-tight text-center"
         style={{
           background: 'linear-gradient(45deg, #34d399, #4f46e5, #6366f1)',
           backgroundClip: 'text',
@@ -56,27 +56,26 @@ export default function OrganizerForm({
         }
       `}</style>
 
-<input
-  type="text"
-  placeholder="Your Great Meet Name"
-  className={`w-full p-4 border border-transparent border-b border-gray-300 rounded-lg bg-gray-50 text-base transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${title ? 'not-italic' : 'italic'}`}
-  value={title}
-  onChange={(e) => setTitle(capitalizeWords(e.target.value))}
-/>
+      <input
+        type="text"
+        placeholder="Your Great Meet Name"
+        className={`w-full px-4 py-2 text-sm border border-transparent border-b border-gray-300 rounded-md bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${title ? 'not-italic' : 'italic'}`}
+        value={title}
+        onChange={(e) => setTitle(capitalizeWords(e.target.value))}
+      />
 
-
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-3">
         <input
           type="text"
           placeholder="First Name"
-          className={`w-full p-4 border border-transparent border-b border-gray-300 rounded-lg bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerFirstName ? 'not-italic' : 'italic'}`}
+          className={`w-full px-4 py-2 text-sm border border-transparent border-b border-gray-300 rounded-md bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerFirstName ? 'not-italic' : 'italic'}`}
           value={organizerFirstName}
           onChange={(e) => setOrganizerFirstName(capitalizeWords(e.target.value))}
         />
         <input
           type="text"
           placeholder="Last Name"
-          className={`w-full p-4 border border-transparent border-b border-gray-300 rounded-lg bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerLastName ? 'not-italic' : 'italic'}`}
+          className={`w-full px-4 py-2 text-sm border border-transparent border-b border-gray-300 rounded-md bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerLastName ? 'not-italic' : 'italic'}`}
           value={organizerLastName}
           onChange={(e) => setOrganizerLastName(capitalizeWords(e.target.value))}
         />
@@ -85,7 +84,7 @@ export default function OrganizerForm({
       <input
         type="email"
         placeholder="Your Email"
-        className={`w-full p-4 border border-transparent border-b border-gray-300 rounded-lg bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerEmail ? 'not-italic' : 'italic'}`}
+        className={`w-full px-4 py-2 text-sm border border-transparent border-b border-gray-300 rounded-md bg-gray-50 transition-all duration-300 focus:border-b-4 focus:border-teal-500 ${organizerEmail ? 'not-italic' : 'italic'}`}
         value={organizerEmail}
         onChange={(e) => setOrganizerEmail(e.target.value)}
       />
