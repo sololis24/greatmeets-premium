@@ -1,11 +1,13 @@
-/** @type {import('next').NextConfig} */
+const path = require("path");
+
 const nextConfig = {
   reactStrictMode: true,
-  images: {
-    domains: ['your-image-host.com'], // 🔄 Replace with your actual image host if needed
-  },
   eslint: {
-    ignoreDuringBuilds: true, // ✅ Skip linting during Netlify or CI builds
+    ignoreDuringBuilds: true,
+  },
+  webpack: (config) => {
+    config.resolve.alias['@'] = path.resolve(__dirname);
+    return config;
   },
 };
 
