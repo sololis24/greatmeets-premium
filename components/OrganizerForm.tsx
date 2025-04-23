@@ -31,7 +31,7 @@ export default function OrganizerForm({
   return (
     <div className="space-y-6">
       <h1
-        className="text-5xl lg:text-6xl font-extrabold mb-10 text-transparent bg-clip-text tracking-wide leading-tight hover:text-teal-500 transition-all duration-300 ease-in-out text-center"
+        className="text-4xl md:text-5xl font-extrabold mb-8 text-transparent bg-clip-text tracking-wide leading-tight text-center"
         style={{
           background: 'linear-gradient(45deg, #34d399, #4f46e5, #6366f1)',
           backgroundClip: 'text',
