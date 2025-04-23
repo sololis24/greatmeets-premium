@@ -173,12 +173,13 @@ export default function HomePage() {
       type={toastType}
       position="top"
     />
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="bg-white px-8 py-12 rounded-2xl shadow-2xl w-full max-w-4xl mx-auto flex flex-col gap-8 min-h-[450px] text-[14px]"
-    >
+  <motion.div
+  initial={{ opacity: 0, y: 30 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5 }}
+  className="bg-white px-8 py-12 rounded-2xl shadow-2xl w-full max-w-xl mx-auto flex flex-col gap-8 min-h-[450px] text-[14px]"
+>
+
   
         <form className="flex-1 space-y-6">
           <OrganizerForm
