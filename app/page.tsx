@@ -163,33 +163,24 @@ export default function HomePage() {
 
   return (
     <main
-    ref={scrollToTopRef}
-    className="min-h-screen flex items-center justify-center bg-gray-100 text-black"
-  >
-    <Toast
-      message={toastMessage}
-      visible={toastVisible}
-      onClose={() => setToastVisible(false)}
-      type={toastType}
-      position="top"
-    />
-<motion.div
-  initial={{ opacity: 0, y: 30 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5 }}
-  className="bg-white px-6 py-10 rounded-2xl shadow-2xl flex flex-col gap-6 min-h-[420px] text-[14px]"
-  style={{
-    width: '100%',
-    maxWidth: '400px', // sweet spot
-    margin: '0 auto',
-  }}
->
+      ref={scrollToTopRef}
+      className="min-h-screen flex items-center justify-center bg-gray-100 text-black"
+    >
+      <Toast
+        message={toastMessage}
+        visible={toastVisible}
+        onClose={() => setToastVisible(false)}
+        type={toastType}
+        position="top"
+      />
 
-
-
-
-  
-        <form className="flex-1 space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md mx-auto px-4 py-10 bg-white rounded-2xl shadow-2xl text-[14px] flex flex-col gap-6"
+      >
+        <form className="space-y-6">
           <OrganizerForm
             title={title}
             setTitle={setTitle}
@@ -243,7 +234,10 @@ export default function HomePage() {
 
           {selectedTimes.length > 0 && (
             <div ref={scrollDownRef} className="scroll-mt-24">
-              <FinalButtons selectedTimes={selectedTimes} handleSendDirectInvite={handleSendDirectInvite} />
+              <FinalButtons
+                selectedTimes={selectedTimes}
+                handleSendDirectInvite={handleSendDirectInvite}
+              />
             </div>
           )}
         </form>
