@@ -6,8 +6,6 @@ import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClockIcon } from '@heroicons/react/24/outline';
 
-
-
 interface Props {
   timeZones: string[];
   aiSuggestions: string[];
@@ -17,6 +15,13 @@ interface Props {
   scrollToConfirmationRef: React.RefObject<HTMLDivElement>;
 }
 
+const awakeHourScore = (decimalTime: number) => {
+  if (decimalTime < 6 || decimalTime > 22) return 0;
+  if (decimalTime >= 9 && decimalTime <= 17) return 1; // prime hours
+  if (decimalTime >= 6 && decimalTime < 9) return (decimalTime - 6) / 3; // fades in
+  if (decimalTime > 17 && decimalTime <= 22) return (22 - decimalTime) / 5; // fades out
+  return 0;
+};
 
 export default function HorizontalTimeScroller({
   timeZones,
@@ -26,7 +31,6 @@ export default function HorizontalTimeScroller({
   scrollToAISuggestionsRef,
   scrollToConfirmationRef,
 }: Props) {
-
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dateRibbonRef = useRef<HTMLDivElement | null>(null);
   const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
@@ -60,6 +64,11 @@ export default function HorizontalTimeScroller({
 
 
   const handleAIButton = () => {
+    onSelectTime(null);
+    setSelectedTimeISO(null);
+  
+    const preferredStartHour = 8;
+    const preferredEndHour = 20;
     const scoredTimes: { iso: string; score: number }[] = [];
   
     for (let block = 0; block < 96; block++) {
@@ -73,26 +82,11 @@ export default function HorizontalTimeScroller({
         minute
       ));
   
-      const idealHour = 12;
-  
       const score = timeZones.reduce((count, tz) => {
-        try {
-          const localHour = parseInt(formatInTimeZone(utcDate, tz, 'H'), 10);
-          const localMinute = parseInt(formatInTimeZone(utcDate, tz, 'm'), 10);
-  
-          const decimalTime = localHour + localMinute / 60;
-  
-          // ✅ Only score times between 9:00 and 17:30
-          if (decimalTime < 9 || decimalTime > 17.5) return count;
-  
-          const distance = Math.abs(decimalTime - idealHour);
-          const weight = 1 - Math.min(distance / 4, 1); // full score at 12, tapering to 0 by 8 or 16
-  
-          return count + weight;
-        } catch (e) {
-          console.warn(`⚠️ Timezone failed for ${tz}`, e);
-          return count;
-        }
+        const localHour = parseInt(formatInTimeZone(utcDate, tz, 'H'), 10);
+        return localHour >= preferredStartHour && localHour < preferredEndHour
+          ? count + 1
+          : count;
       }, 0);
   
       scoredTimes.push({ iso: utcDate.toISOString(), score });
@@ -105,9 +99,7 @@ export default function HorizontalTimeScroller({
     setJustSuggestedTimes(topTimes);
     setShowTimeline(true);
   
-    setTimeout(() => {
-      setJustSuggestedTimes([]);
-    }, 1500);
+    setTimeout(() => setJustSuggestedTimes([]), 1500);
   
     if (sorted.length > 0) {
       const topSuggestion = sorted[0].iso;
@@ -124,7 +116,9 @@ export default function HorizontalTimeScroller({
     }, 100);
   };
   
+  
 
+  
   const isAISuggestion = (iso: string) => suggestedTimes.includes(iso);
 
   return (
@@ -184,6 +178,7 @@ export default function HorizontalTimeScroller({
 </motion.button>
 
 
+
 {showTimeline && (
   <>
     <div ref={scrollToAISuggestionsRef} className="scroll-mt-24">
@@ -231,12 +226,16 @@ export default function HorizontalTimeScroller({
                       hour,
                       minute
                     ));
+                    
                     const isoTime = utcDate.toISOString();
                     const timeString = formatInTimeZone(utcDate, tz, 'HH:mm');
                     const isHovered = hoveredBlock === i;
                     const isSelected = selectedTimes.includes(isoTime);
                     const isSuggested = isAISuggestion(isoTime);
-
+                    if (isSuggested) {
+                      console.log("✨ Showing as AI suggestion:", isoTime);
+                    }
+                    
                     return (
                       <td
                         key={i}

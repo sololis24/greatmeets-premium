@@ -222,6 +222,7 @@ export default function HomePage() {
                     timeZones={uniqueTimeZones}
                     aiSuggestions={[]}
                     selectedTimes={selectedTimes}
+                    
                     onSelectTime={(iso) => {
                       if (iso) {
                         setSelectedTimes([iso]);
