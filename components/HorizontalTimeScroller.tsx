@@ -57,11 +57,11 @@ export default function HorizontalTimeScroller({
     if (autoScrollRef.current) clearInterval(autoScrollRef.current);
   };
 
-  const handleAIButton = () => {
-    const preferredStartHour = 8;
-    const preferredEndHour = 20;
-    const scoredTimes: { iso: string; score: number }[] = [];
 
+
+  const handleAIButton = () => {
+    const scoredTimes: { iso: string; score: number }[] = [];
+  
     for (let block = 0; block < 96; block++) {
       const hour = Math.floor(block / 4);
       const minute = (block % 4) * 15;
@@ -72,42 +72,43 @@ export default function HorizontalTimeScroller({
         hour,
         minute
       ));
-
-      const idealHour = 12; // noon
-
+  
+      const idealHour = 12;
+  
       const score = timeZones.reduce((count, tz) => {
         try {
-          const localHourStr = formatInTimeZone(utcDate, tz, 'H');
-          const localHour = parseInt(localHourStr, 10);
-          if (isNaN(localHour)) return count;
-      
-          if (localHour >= 8 && localHour <= 18) {
-            const distance = Math.abs(localHour - idealHour);
-            const weight = 1 - Math.min(distance / 10, 1);
-            return count + weight;
-          }
+          const localHour = parseInt(formatInTimeZone(utcDate, tz, 'H'), 10);
+          const localMinute = parseInt(formatInTimeZone(utcDate, tz, 'm'), 10);
+  
+          const decimalTime = localHour + localMinute / 60;
+  
+          // ✅ Only score times between 9:00 and 17:30
+          if (decimalTime < 9 || decimalTime > 17.5) return count;
+  
+          const distance = Math.abs(decimalTime - idealHour);
+          const weight = 1 - Math.min(distance / 4, 1); // full score at 12, tapering to 0 by 8 or 16
+  
+          return count + weight;
         } catch (e) {
-          console.warn(`⚠️ Timezone failed: ${tz}`, e);
+          console.warn(`⚠️ Timezone failed for ${tz}`, e);
+          return count;
         }
-      
-        return count;
       }, 0);
-      
-
+  
       scoredTimes.push({ iso: utcDate.toISOString(), score });
     }
-
+  
     const sorted = scoredTimes.sort((a, b) => b.score - a.score);
     const topTimes = sorted.slice(0, 3).map((t) => t.iso);
-
+  
     setSuggestedTimes(topTimes);
     setJustSuggestedTimes(topTimes);
     setShowTimeline(true);
-
+  
     setTimeout(() => {
       setJustSuggestedTimes([]);
     }, 1500);
-
+  
     if (sorted.length > 0) {
       const topSuggestion = sorted[0].iso;
       setTimeout(() => {
@@ -117,11 +118,12 @@ export default function HorizontalTimeScroller({
         }
       }, 100);
     }
-
+  
     setTimeout(() => {
       scrollToAISuggestionsRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };
+  
 
   const isAISuggestion = (iso: string) => suggestedTimes.includes(iso);
 
