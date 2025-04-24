@@ -59,7 +59,7 @@ function ClientSuccessPage() {
   onClose={() => setToastVisible(false)}
   type={toastType}
   position="top"
-  style={{ top: '3.5rem' }} // 👈 move it closer to the content
+  style={{ top: '3.5rem' }} // 👈 move it closer to the contentt
 />
 
 
