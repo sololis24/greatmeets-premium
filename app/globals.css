@@ -28,9 +28,15 @@ html, body {
   min-height: 100vh;
 }
 
+@layer base {
+  html, body {
+    background-color: #ffffff !important;
+  }
+}
+
 /* === Global Styles === */
 body {
-  background-color: var(--white);
+  background-color: #ffffff;
   color: var(--foreground);
   font-family: 'Poppins', 'Inter', Arial, Helvetica, sans-serif;
   display: flex;
@@ -257,4 +263,13 @@ textarea.error {
   }
 }
 
+html {
+  background-color: #ffffff;
+}
+
+@layer base {
+  html, body {
+    @apply bg-white text-black;
+  }
+}
 

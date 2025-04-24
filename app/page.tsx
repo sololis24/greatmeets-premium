@@ -168,7 +168,7 @@ export default function HomePage() {
   return (
     <main
       ref={scrollToTopRef}
-      className="min-h-screen flex items-center justify-center bg-gray-100 text-black">
+      className="min-h-screen bg-white text-black py-10">
   <div className="w-full max-w-4xl mx-auto px-4 relative"> {/* this is key! */}
       {/* ✅ Toast anchors to this card-specific relative wrapper */}
       <div className="relative">
@@ -180,13 +180,12 @@ export default function HomePage() {
           position="top"
         />
 
-<motion.div
-  initial={{ opacity: 0, y: 30 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5 }}
-  className="bg-white px-6 py-10 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto flex flex-col gap-8 min-h-[470px] text-[14px]"
->
-
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white px-8 py-12 rounded-2xl shadow-2xl w-full flex flex-col gap-8 min-h-[470px] text-[14px]"
+          >
             <form className="flex-1 space-y-6">
               <OrganizerForm
                 title={title}
