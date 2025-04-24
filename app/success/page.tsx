@@ -53,14 +53,15 @@ function ClientSuccessPage() {
           transition={{ duration: 0.5 }}
           className="card-wide"
         >
-          {/* ✅ Toast moved inside the card */}
-          <Toast
-            visible={toastVisible}
-            message={toastMessage}
-            onClose={() => setToastVisible(false)}
-            type={toastType}
-            position="top"
-          />
+        <Toast
+  visible={toastVisible}
+  message={toastMessage}
+  onClose={() => setToastVisible(false)}
+  type={toastType}
+  position="top"
+  style={{ top: '3.5rem' }} // 👈 move it closer to the content
+/>
+
 
           <motion.div
             initial={{ rotate: -15 }}
