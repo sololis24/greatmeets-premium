@@ -223,21 +223,12 @@ textarea.error {
 }
 
 .success-page {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(to bottom, #ccfbf1, #ffffff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  z-index: 10;
-  overflow: visible; /* or remove the line entirely */
+  min-height: 100vh;
+  background: linear-gradient(#ffffff);
+
+  padding: 4rem 1.5rem;
 }
+
 
 .card-wide {
   background-color: white;

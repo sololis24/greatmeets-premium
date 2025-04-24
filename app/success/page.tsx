@@ -21,6 +21,9 @@ function ClientSuccessPage() {
   const [inviteId, setInviteId] = useState('');
   const [inviteLink, setInviteLink] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -35,19 +38,16 @@ function ClientSuccessPage() {
   }, [searchParams]);
 
   const handleCopyLink = () => {
-    if (inviteLink && navigator.clipboard) {
-      navigator.clipboard.writeText(inviteLink).then(() => {
-        setCopied(true);
-        setToastVisible(true);
+    const inviteLink = `${window.location.origin}/invite/${inviteId}`;
   
-        // 🔥 Correct place to reset toast
-        setTimeout(() => {
-          setCopied(false);
-          setToastVisible(false); // ✅ This line was missing!
-        }, 2500);
-      });
-    }
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      setToastMessage("Invite link copied to clipboard!");
+      setToastType("success");
+      setToastVisible(true);
+    });
   };
+  
+  
   
   const handleCreateAnotherMeet = () => {
     router.push('/');
@@ -55,7 +55,8 @@ function ClientSuccessPage() {
 
   return (
     <div className="success-page">
-     <main className="success-page-main relative">
+    <main className="success-page min-h-screen">
+
         {/* ✅ Always render Toast */}
         <Toast
           visible={toastVisible}
