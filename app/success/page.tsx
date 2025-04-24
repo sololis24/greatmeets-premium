@@ -19,59 +19,49 @@ function ClientSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [inviteId, setInviteId] = useState('');
-  const [inviteLink, setInviteLink] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-const [toastType, setToastType] = useState<'success' | 'error'>('success');
-
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const id = searchParams.get('inviteId');
     if (id) {
       setInviteId(id);
-
-      if (typeof window !== 'undefined') {
-        setInviteLink(`${window.location.origin}/invite/${id}`);
-      }
     }
   }, [searchParams]);
 
   const handleCopyLink = () => {
     const inviteLink = `${window.location.origin}/invite/${inviteId}`;
-  
     navigator.clipboard.writeText(inviteLink).then(() => {
       setToastMessage("Invite link copied to clipboard!");
       setToastType("success");
       setToastVisible(true);
     });
   };
-  
-  
-  
+
   const handleCreateAnotherMeet = () => {
     router.push('/');
   };
 
   return (
     <div className="success-page">
-    <main className="success-page min-h-screen">
-
-        {/* ✅ Always render Toast */}
-        <Toast
-          visible={toastVisible}
-          message="Invite link copied to clipboard!"
-          onClose={() => setToastVisible(false)}
-          type="success"
-          position="top"
-        />
-
+      <main className="success-page min-h-screen">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="card-wide"
         >
+          {/* ✅ Toast moved inside the card */}
+          <Toast
+            visible={toastVisible}
+            message={toastMessage}
+            onClose={() => setToastVisible(false)}
+            type={toastType}
+            position="top"
+          />
+
           <motion.div
             initial={{ rotate: -15 }}
             animate={{ rotate: [0, 20, -20, 10, -10, 0] }}
