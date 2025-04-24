@@ -88,23 +88,17 @@ function ClientSuccessPage() {
           </div>
 
           <div className="w-full max-w-md mx-auto flex flex-col gap-4">
-            <motion.button
-              onClick={handleCopyLink}
-              className="w-full bg-teal-500 text-white font-bold py-4 rounded-full transition-all duration-300 hover:bg-gradient-to-r hover:from-teal-400 hover:to-teal-600 focus:ring-4 focus:ring-teal-300 shadow-md text-center"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {copied ? 'Link Copied!' : 'Copy Invite Link'}
-            </motion.button>
+        
+          <motion.button
+  onClick={handleCreateAnotherMeet}
+  className="w-full bg-teal-500 text-white font-semibold py-4 rounded-full transition-all duration-300 hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-teal-300 shadow-md text-center"
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+>
+  Create Another Great Meet
+</motion.button>
 
-            <motion.button
-              onClick={handleCreateAnotherMeet}
-              className="w-full border border-teal-500 text-teal-500 font-semibold py-4 rounded-full hover:bg-teal-50 focus:outline-none focus:border-teal-700 shadow-md text-center"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Create Another Great Meet
-            </motion.button>
+
           </div>
 
           <p className="text-sm text-gray-400 pt-6">
