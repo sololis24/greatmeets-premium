@@ -76,12 +76,18 @@ export default function HorizontalTimeScroller({
       const idealHour = 12; // noon
 
       const score = timeZones.reduce((count, tz) => {
-        const localHour = parseInt(formatInTimeZone(utcDate, tz, 'H'), 10);
+        try {
+          const localHourStr = formatInTimeZone(utcDate, tz, 'H');
+          const localHour = parseInt(localHourStr, 10);
+          if (isNaN(localHour)) return count;
       
-        if (localHour >= 8 && localHour <= 18) {
-          const distance = Math.abs(localHour - idealHour);
-          const weight = 1 - Math.min(distance / 10, 1); // 1.0 at 12pm, 0.5 at 7am or 5pm, 0 at extremes
-          return count + weight;
+          if (localHour >= 8 && localHour <= 18) {
+            const distance = Math.abs(localHour - idealHour);
+            const weight = 1 - Math.min(distance / 10, 1);
+            return count + weight;
+          }
+        } catch (e) {
+          console.warn(`⚠️ Timezone failed: ${tz}`, e);
         }
       
         return count;
