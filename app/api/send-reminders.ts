@@ -4,9 +4,6 @@ import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
 import { Resend } from 'resend';
 import { utcToZonedTime } from 'date-fns-tz';
 
-export const config = {
-  schedule: '*/30 * * * *', // runs every 30 minutes
-};
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
