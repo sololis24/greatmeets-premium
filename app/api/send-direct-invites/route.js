@@ -73,7 +73,7 @@ export async function POST(req) {
         );
 
         await resend.emails.send({
-          from: 'GreatMeets <hello@greatmeets.ai>',
+          from: 'GreatMeets <noreply@greatmeets.ai>',
           to: invitee.email,
           subject: `You're invited to: ${meetingTitle || 'a meeting'}`,
           html: directInviteTemplate(organizerName, meetingTitle, invitee.name, inviteeLocalTimes),
@@ -93,7 +93,7 @@ export async function POST(req) {
       .join('<br/><br/>');
 
     await resend.emails.send({
-      from: 'GreatMeets <hello@greatmeets.ai>',
+      from: 'GreatMeets <noreply@greatmeets.ai>',
       to: organizerEmail,
       subject: `Your Great Meet has been sent successfully`,
       html: organizerConfirmationEmail(organizerName, meetingTitle, inviteeListHTML, selectedTimes, organizerTimezone),

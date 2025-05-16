@@ -1,6 +1,10 @@
 // /app/api/suggest-times/route.js or /pages/api/suggest-times.js
 import { NextResponse } from 'next/server';
 import { DateTime } from 'luxon';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 const timezoneMap = {
   // Americas

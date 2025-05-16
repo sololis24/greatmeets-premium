@@ -76,6 +76,7 @@ function generateInviteEmailHTML(organizerName, pollLink) {
   `;
 }
 
+
 // ✨ Generate Reminder Email
 function generateReminderEmailHTML(organizerName, meetTitle, pollLink) {
   return `

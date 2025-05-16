@@ -5,6 +5,12 @@ import { DayPicker } from 'react-day-picker';
 import { motion } from 'framer-motion';
 import 'react-day-picker/dist/style.css';
 
+const roundToNearest15 = (date: Date) => {
+  const ms = 1000 * 60 * 15;
+  return new Date(Math.round(date.getTime() / ms) * ms);
+};
+
+
 type Props = {
   hasDeadline: boolean;
   setHasDeadline: (val: boolean) => void;
@@ -14,7 +20,7 @@ type Props = {
   setDeadline: (val: string) => void;
   setToastVisible: (val: boolean) => void;
   setToastMessage: (val: string) => void;
-  setToastType: (val: string) => void;
+  setToastType: (val: 'success' | 'error') => void;
 };
 
 export default function DeadlinePicker({
@@ -27,7 +33,15 @@ export default function DeadlinePicker({
   setToastMessage,
   setToastType,
 }: Props) {
-  const [selectedDeadlineDate, setSelectedDeadlineDate] = useState(new Date());
+  const [selectedDeadlineDate, setSelectedDeadlineDate] = useState(() => {
+    const now = new Date();
+    const tomorrowAtNine = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0, 0);
+    return tomorrowAtNine;
+  });
+  
+  
+  
+
   const calendarRef = useRef(null);
 
   // Close calendar on outside click
@@ -80,11 +94,17 @@ export default function DeadlinePicker({
                 <DayPicker
                   mode="single"
                   selected={selectedDeadlineDate}
-                  onSelect={(date) => {
-                    if (!date) return;
-                    setSelectedDeadlineDate(date);
-                    setOpenCalendarIndex(null); // ✅ Close calendar
-                  }}
+
+                 onSelect={(date) => {
+  if (!date) return;
+  const updated = new Date(date);
+  updated.setHours(selectedDeadlineDate.getHours());
+  updated.setMinutes(selectedDeadlineDate.getMinutes());
+  updated.setSeconds(0, 0);
+  setSelectedDeadlineDate(updated);
+  setOpenCalendarIndex(null);
+}}
+
                   fromDate={new Date()}
                 />
               </motion.div>

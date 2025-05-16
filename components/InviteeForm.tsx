@@ -27,6 +27,15 @@ interface Props {
   handleRemoveInvitee: (index: number) => void;
 }
 
+function isValidEmail(email: string): boolean {
+  const trimmed = email.trim().toLowerCase();
+  const basicRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const blacklistedDomains = ['mailinator.com', 'tempmail.com', '10minutemail.com'];
+  const domain = trimmed.split('@')[1];
+
+  return basicRegex.test(trimmed) && !blacklistedDomains.includes(domain);
+}
+
 export default function InviteeForm({
   inviteeFirstName,
   setInviteeFirstName,
@@ -101,15 +110,14 @@ export default function InviteeForm({
       <TimezoneSelect value={newInviteeTimezone} onChange={setNewInviteeTimezone} />
 
       <motion.button
-  type="button"
-  onClick={handleAddInvitee}
-  className="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white text-lg font-semibold py-4 rounded-full transition mt-4"
-  animate={Object.keys(inviteeErrors).length > 0 ? { x: [0, -10, 10, -10, 0] } : {}}
-  transition={{ duration: 0.4 }}
->
-  + Add Invitee
-</motion.button>
-
+        type="button"
+        onClick={handleAddInvitee}
+        className="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white text-lg font-semibold py-4 rounded-full transition mt-4"
+        animate={Object.keys(inviteeErrors).length > 0 ? { x: [0, -10, 10, -10, 0] } : {}}
+        transition={{ duration: 0.4 }}
+      >
+        + Add Invitee
+      </motion.button>
 
       {invitees.length > 0 && (
         <div className="bg-gray-50 p-4 rounded-lg shadow-inner space-y-4 mt-6">

@@ -112,12 +112,13 @@ textarea {
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 9999;
-  animation: slide-down 0.4s ease-out forwards, fade-out 0.8s ease-out 2.5s forwards;
+  animation: slide-down 0.1s ease-out forwards, fade-out 0.8s ease-out 3.5s forwards;
   white-space: nowrap;
   max-width: 90vw;
   width: max-content;
   text-align: center;
 }
+
 
 .toast-message {
   font-size: 14px;

@@ -38,7 +38,7 @@ const emailTemplate = (senderName, pollLink, inviteeEmail, inviteeTimezone, sele
       <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <h1 style="font-size: 24px; color: #4f46e5; font-weight: bold;">You're Invited! 🎉</h1>
         <p style="font-size: 18px; color: #333333;">${senderName} invited you to pick the best time for your Great Meet.</p>
-        <p style="font-size: 16px; color: #333;">🕓 Suggested Times (Your Timezone):</p>
+        <p style="font-size: 16px; color: #333;">🕓 Suggested Times (In Your Timezone):</p>
         <p style="font-size: 15px; color: #111;">${formattedTimes.join('<br/>')}</p>
        <a href="${pollLink}?email=${encodeURIComponent(inviteeEmail)}"
    style="background: linear-gradient(90deg, #34d399, #4f46e5); color: white; text-decoration: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; display: inline-block; margin-top: 8px;">Choose Your Times</a>
