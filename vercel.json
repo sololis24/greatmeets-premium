@@ -1,9 +1,9 @@
 {
-    "cron": [
-      {
-        "path": "api/send-reminders",
-        "schedule": "0 8 * * *"
+    "functions": {
+      "api/send-reminders/route.ts": {
+        "runtime": "edge",
+        "schedule": "*/30 * * * *"
       }
-    ]
+    }
   }
   
