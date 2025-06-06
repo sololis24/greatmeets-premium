@@ -23,15 +23,9 @@ export default function MeetingLinkIntegration({
   const [loadingZoom, setLoadingZoom] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const hasTriggeredGoogleAutoGen = useRef(false);
-
-
-
-
   const isZoomLink = meetingLink.includes('zoom.us');
   const storedUserToken = typeof window !== 'undefined' ? localStorage.getItem('userToken') : '';
   const isGoogleLink = meetingLink.includes('meet.google.com');
-
-
   const handleCreateZoomMeeting = async () => {
     if (!userToken) {
       alert('User token missing.');
@@ -63,7 +57,6 @@ export default function MeetingLinkIntegration({
       setLoadingZoom(false);
     }
   };
-
 
   const handleCreateGoogleMeeting = async () => {
     if (!userToken) {
@@ -97,12 +90,6 @@ export default function MeetingLinkIntegration({
       setLoadingGoogle(false);
     }
   };
-  
-
-
-  console.log('🌍 userToken (prop):', userToken);
-console.log('🗂️ localStorage token:', localStorage.getItem('userToken'));
-
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -161,11 +148,12 @@ console.log('🗂️ localStorage token:', localStorage.getItem('userToken'));
       localStorage.setItem('userToken', token);
     }
     
-    const redirectUri = encodeURIComponent('https://96bb-84-86-92-1.ngrok-free.app/api/zoom/callback');
+    const redirectUri = encodeURIComponent(process.env.ZOOM_REDIRECT_URI || '');
     const zoomUrl = `https://zoom.us/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${token}`;
-
+    
     console.log('🌐 Zoom OAuth redirect (with token):', token);
     window.location.href = zoomUrl;
+    
   };
 
   console.log('🧪 ENV:', process.env);
@@ -195,95 +183,92 @@ const handleGoogleConnect = () => {
 };
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-4 flex-wrap">
-       
-       
-        {/* Zoom */}
-{!isGoogleLink && (
-  <div className="flex items-center gap-2">
-    {zoomConnected ? (
-      meetingLink ? (
-        <button
-          type="button"
-          disabled
-          className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium cursor-default"
-        >
-          <Check className="w-4 h-4 text-green-600" />
-          Zoom Link Generated
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={handleCreateZoomMeeting}
-          disabled={loadingZoom}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50"
-        >
-          {loadingZoom ? 'Creating Zoom Link...' : 'Generate Zoom Link'}
-        </button>
-      )
-    ) : (
-      <button
-        type="button"
-        onClick={handleZoomConnect}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-      >
-        Connect Zoom
-      </button>
-    )}
-  </div>
-)}
 
-
-
-{!isZoomLink && (
-  <div className="flex items-center gap-2">
-    {googleConnected ? (
-      <button
-        type="button"
-        onClick={handleCreateGoogleMeeting}
-        disabled={loadingGoogle || isGoogleLink}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-          isGoogleLink
-            ? 'bg-gray-300 text-gray-600 cursor-default'
-            : 'bg-green-600 text-white hover:bg-green-700'
-        }`}
-      >
-        {loadingGoogle ? (
-          'Creating Google Meet...'
-        ) : isGoogleLink ? (
-          <>
-            <Check className="w-4 h-4 text-green-600" />
-            Google Link Created
-          </>
+<div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-200 shadow-lg">
+  <div className="flex flex-wrap gap-4">
+    {/* Zoom Button */}
+    {!isGoogleLink && (
+      <div>
+        {zoomConnected ? (
+          meetingLink ? (
+            <button
+              type="button"
+              disabled
+              className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-500 rounded-full font-medium cursor-default border border-gray-300"
+            >
+              <Check className="w-4 h-4 text-green-600" />
+              Zoom Link Ready!
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCreateZoomMeeting}
+              disabled={loadingZoom}
+              className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-full font-semibold hover:opacity-90 transition disabled:opacity-50"
+            >
+              {loadingZoom ? 'Creating Zoom Link...' : 'Generate Zoom Link'}
+            </button>
+          )
         ) : (
-          'Generate Google Link'
+          <button
+            type="button"
+            onClick={handleZoomConnect}
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition"
+          >
+            Connect Zoom
+          </button>
         )}
-      </button>
-    ) : (
-      <button
-        type="button"
-        onClick={handleGoogleConnect}
-        className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition"
-      >
-        Create Google Meet
-      </button>
+      </div>
+    )}
+
+    {/* Google Button */}
+    {!isZoomLink && (
+      <div>
+        {googleConnected ? (
+          <button
+            type="button"
+            onClick={handleCreateGoogleMeeting}
+            disabled={loadingGoogle || isGoogleLink}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold transition ${
+              isGoogleLink
+                ? 'bg-gray-100 text-gray-500 border border-gray-300 cursor-default'
+                : 'bg-gradient-to-r from-red-500 to-orange-400 text-white hover:opacity-90'
+            }`}
+          >
+            {loadingGoogle ? (
+              'Creating Google Meet...'
+            ) : isGoogleLink ? (
+              <>
+                <Check className="w-4 h-4 text-green-600" />
+                Google Link Ready!
+              </>
+            ) : (
+              'Generate Google Link'
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleGoogleConnect}
+            className="px-5 py-2.5 bg-red-500 text-white rounded-full font-semibold hover:bg-red-600 transition"
+          >
+            Create Google Meet
+          </button>
+        )}
+      </div>
     )}
   </div>
-)}
 
-
-      </div>
-
-      <div ref={scrollToMeetingLinkRef}>
-        <input
-          type="url"
-          value={meetingLink}
-          onChange={(e) => setMeetingLink(e.target.value)}
-          placeholder="Meeting link will appear here..."
-          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-base shadow-sm focus:ring-2 focus:ring-indigo-400"
-        />
-      </div>
-    </div>
+  {/* Input */}
+  <div ref={scrollToMeetingLinkRef}>
+    <input
+      type="url"
+      value={meetingLink}
+      onChange={(e) => setMeetingLink(e.target.value)}
+      placeholder="Meeting link will appear here..."
+      className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+    />
+  </div>
+</div>
   );
 }

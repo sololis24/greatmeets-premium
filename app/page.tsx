@@ -16,7 +16,7 @@ import UpgradeToPro from '@/components/UpgradeToPro';
 import { Crown } from 'lucide-react';
 import { isTrialActive } from './utils/isTrialActive';
 import type { RefObject } from 'react';
-
+import type { TimeSlot } from '@/types/index';
 
 interface Invitee {
   firstName: string;
@@ -33,41 +33,41 @@ export default function HomePage() {
   const scrollDownRef = useRef<HTMLDivElement | null>(null);
   const scrollToAISuggestionsRef = useRef<HTMLDivElement>(null!);
   const scrollToConfirmationRef = useRef<HTMLDivElement>(null!);
-
   const [title, setTitle] = useState('');
   const [organizerFirstName, setOrganizerFirstName] = useState('');
   const [organizerLastName, setOrganizerLastName] = useState('');
   const [organizerEmail, setOrganizerEmail] = useState('');
   const [organizerErrors, setOrganizerErrors] = useState<Record<string, string>>({});
-
   const [invitees, setInvitees] = useState<Invitee[]>([]);
   const [inviteeFirstName, setInviteeFirstName] = useState('');
   const [inviteeLastName, setInviteeLastName] = useState('');
   const [newInviteeEmail, setNewInviteeEmail] = useState('');
   const [newInviteeTimezone, setNewInviteeTimezone] = useState('');
   const [inviteeErrors, setInviteeErrors] = useState<Record<string, string>>({});
-
-  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+  const [selectedTimes, setSelectedTimes] = useState<TimeSlot[]>([]);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [loading, setLoading] = useState(false);
-
   const [hasDeadline, setHasDeadline] = useState(false);
 const [deadline, setDeadline] = useState('');
 const [openCalendarIndex, setOpenCalendarIndex] = useState<string | null>(null);
-
 const [showToast, setShowToast] = useState(false);
 const [meetingLink, setMeetingLink] = useState('');
 const [trialStartedAt, setTrialStartedAt] = useState<string | undefined>(undefined);
-
 const [isPro, setIsPro] = useState<boolean | null>(null);
 const scrollToMeetingLinkRef = useRef<HTMLDivElement | null>(null);
 const [justGeneratedMeetingLink, setJustGeneratedMeetingLink] = useState(false);
-
 const [isHydrated, setIsHydrated] = useState(false);
-
 const [userToken, setUserToken] = useState('');
+const [duration, setDuration] = useState<number>(30); // default to 30 min
+const [multiSlotConfirmation, setMultiSlotConfirmation] = useState<boolean | null>(null);
+const [shakeCount, setShakeCount] = useState(0);
+const [hasRendered, setHasRendered] = useState(false);
+useEffect(() => {
+  setHasRendered(true);
+}, []);
+
 
 useEffect(() => {
   const token = localStorage.getItem('userToken');
@@ -79,15 +79,12 @@ useEffect(() => {
 
 useEffect(() => {
   if (justGeneratedMeetingLink) {
-    console.log('🔥 Scroll triggered');
 
     const scroll = () => {
       if (scrollToMeetingLinkRef.current) {
-        console.log('✅ Ref exists, scrolling...');
         scrollToMeetingLinkRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setJustGeneratedMeetingLink(false);
       } else {
-        console.warn('❌ Ref not ready, retrying...');
         requestAnimationFrame(scroll);
       }
     };
@@ -96,11 +93,9 @@ useEffect(() => {
   }
 }, [justGeneratedMeetingLink]);
 
-
 useEffect(() => {
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem('isPro');
-    console.log('🔍 isPro from localStorage:', stored); // helps with debugging
     if (stored === 'true') {
       setIsPro(true);
     } else if (stored === 'false') {
@@ -173,8 +168,23 @@ useEffect(() => {
     localStorage.setItem('invitees', JSON.stringify(invitees));
   }, [invitees]);
   
-
-
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Marks this as a new session
+      sessionStorage.setItem('newSession', 'true');
+    }
+  }, []);
+  
+  useEffect(() => {
+    if (organizerEmail) {
+      fetch('/api/init-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: organizerEmail }),
+      });
+    }
+  }, [organizerEmail]);
+  
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
@@ -190,6 +200,8 @@ useEffect(() => {
         if (data.title) setTitle(data.title);
         if (data.selectedTimes) setSelectedTimes(data.selectedTimes);
         if (data.invitees) setInvitees(data.invitees);
+        if (data.duration) setDuration(data.duration);
+
   
         // ✅ Trigger scroll after hydration
         if (params.get("zoom") === "connected") {
@@ -220,13 +232,12 @@ useEffect(() => {
       selectedTimes,
       invitees,
       meetingLink, // ✅ Add this
+      duration, // ✅ Add this
     };
   
     localStorage.setItem(`formData-${userToken}`, JSON.stringify(formData));
 
-  }, [title, organizerFirstName, organizerLastName, organizerEmail, selectedTimes, invitees, meetingLink]);
-
-  
+  }, [title, organizerFirstName, organizerLastName, organizerEmail, selectedTimes, invitees, meetingLink, duration]);
 
   const validateOrganizer = () => {
     const errors: Record<string, string> = {};
@@ -238,80 +249,103 @@ useEffect(() => {
     return Object.keys(errors).length === 0;
   };
 
+
+
   const handleAddInvitee = () => {
     if (!validateOrganizer()) {
       scrollToTopRef.current?.scrollIntoView({ behavior: 'smooth' });
       setToastMessage('Please fix the required fields above.');
       setToastType('error');
       setToastVisible(true);
+      setShakeCount((prev) => prev + 1);
       return;
     }
-
     const errors: Record<string, string> = {};
-    if (!inviteeFirstName.trim() || !inviteeLastName.trim())
+  
+    if (!inviteeFirstName.trim() || !inviteeLastName.trim()) {
       errors.name = 'First and last name are required';
-    if (!newInviteeEmail.trim()) errors.email = 'Email is required';
-    if (!newInviteeTimezone) errors.timezone = 'Timezone is required';
-
+    }
+  
+    const trimmedEmail = newInviteeEmail.trim().toLowerCase();
+    const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+    const blacklistedDomains = ['mailinator.com', 'tempmail.com', '10minutemail.com'];
+    const domain = trimmedEmail.split('@')[1];
+  
+    if (!trimmedEmail) {
+      errors.email = 'Email is required';
+    } else if (!isEmailValid || blacklistedDomains.includes(domain)) {
+      errors.email = 'Invalid email address';
+    }
+  
+    if (!newInviteeTimezone) {
+      errors.timezone = 'Timezone is required';
+    }
+  
     setInviteeErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-
+  
+    if (Object.keys(errors).length > 0) {
+      setShakeCount((prev) => prev + 1); // this is essential
+      return;
+    }
+    
+    
+    
+  
     const token = nanoid();
     if (typeof window !== 'undefined' && invitees.length === 0) {
       localStorage.setItem('userToken', token);
     }
-
-
-
-    setInvitees((prev) => {
-      const updatedInvitees = [
-        ...prev,
-        {
-          firstName: inviteeFirstName.trim(),
-          lastName: inviteeLastName.trim(),
-          email: newInviteeEmail.trim().toLowerCase(),
-          timezone: newInviteeTimezone,
-          token,
-        },
-      ];
-    
-      const userToken = localStorage.getItem('userToken');
-      if (userToken) {
-        localStorage.setItem(`formData-${userToken}`, JSON.stringify({
-          title,
-          organizerFirstName,
-          organizerLastName,
-          organizerEmail,
-          selectedTimes,
-          invitees: updatedInvitees,
-        }));
-      }
-    
-      return updatedInvitees;
-    });
-    
-
+  
+    const updatedInvitees = [
+      ...invitees,
+      {
+        firstName: inviteeFirstName.trim(),
+        lastName: inviteeLastName.trim(),
+        email: trimmedEmail,
+        timezone: newInviteeTimezone,
+        token,
+      },
+    ];
+  
+    setInvitees(updatedInvitees);
     setInviteeFirstName('');
     setInviteeLastName('');
     setNewInviteeEmail('');
     setNewInviteeTimezone('');
     setInviteeErrors({});
-  };
-
-
   
+    const userToken = localStorage.getItem('userToken');
+    if (userToken) {
+      localStorage.setItem(`formData-${userToken}`, JSON.stringify({
+        title,
+        organizerFirstName,
+        organizerLastName,
+        organizerEmail,
+        selectedTimes,
+        invitees: updatedInvitees,
+      }));
+    }
+  };
+  
+
   const handleRemoveInvitee = (index: number) => {
     setInvitees((prev) => prev.filter((_, i) => i !== index));
   };
 
-
   const handleSendDirectInvite = async () => {
     // 🔒 Check if user’s trial has expired
-    if (!isTrialActive()) {
-      router.push('/upgrade');
-      return;
-    }
-  
+  const res = await fetch('/api/get-user-access', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: organizerEmail }),
+});
+const { isPro, inTrial } = await res.json();
+
+if (!isPro && !inTrial) {
+  router.push('/upgrade');
+  return;
+}
+
     // 🟢 Start trial if it's their first time using a Pro feature
     if (!localStorage.getItem('trialStartedAt')) {
       localStorage.setItem('trialStartedAt', new Date().toISOString());
@@ -338,8 +372,16 @@ useEffect(() => {
       const inviteesWithTokens = invitees.map((invitee) => ({
         ...invitee,
         token: invitee.token || nanoid(),
+        timezone: invitee.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone, // ✅ FIX HERE
       }));
-  
+      
+        // ✅ ADD THIS HERE:
+    console.log('📧 Creating poll with organizer details:', {
+      organizerEmail,
+      organizerName: `${organizerFirstName.trim()} ${organizerLastName.trim()}`,
+      selectedTimes,
+    });
+
       const emailPayload = {
         invitees: inviteesWithTokens.map((i) => ({
           name: [i.firstName, i.lastName].filter(Boolean).join(' ').trim(),
@@ -356,7 +398,6 @@ useEffect(() => {
         deadline, // ✅ Add this line
       };
       
-  
       const response = await fetch('/api/send-direct-invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -373,7 +414,6 @@ if (userToken) {
   localStorage.removeItem(`formData-${userToken}`);
 }
 
-  
       router.push('/success');
     } catch (error: any) {
       console.error('❌ Failed to send direct invites:', error);
@@ -387,11 +427,18 @@ if (userToken) {
  
   const handleCreatePoll = async () => {
     // 🔒 Check if user’s trial has expired
-    if (!isTrialActive()) {
+    const res = await fetch('/api/get-user-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: organizerEmail }),
+    });
+    const { isPro, inTrial } = await res.json();
+    
+    if (!isPro && !inTrial) {
       router.push('/upgrade');
       return;
     }
-  
+    
     // 🟢 Start trial if it's their first time using a Pro feature
     if (!localStorage.getItem('trialStartedAt')) {
       localStorage.setItem('trialStartedAt', new Date().toISOString());
@@ -431,13 +478,19 @@ if (userToken) {
         deadline: hasDeadline && deadline ? deadline : null,
         meetingLink: meetingLink || null,
         createdAt: new Date().toISOString(),
+        multiSlotConfirmation, // ✅ add this line
       });
-  
-      console.log('✅ Meeting link saved:', meetingLink);
-      console.log('📌 New poll created with ID:', pollDoc.id);
-  
+ 
       const pollLink = `${window.location.origin}/polls/${pollDoc.id}`;
-  
+      console.log('📨 Payload to /api/send-poll-invites:', {
+        invitees: inviteesWithTokens,
+        organizerName: `${organizerFirstName.trim()} ${organizerLastName.trim()}`,
+        organizerEmail,
+        selectedTimes,
+        deadline,
+        multiSlotConfirmation,
+      });
+      
       const emailPayload = {
         invitees: inviteesWithTokens,
         pollLink,
@@ -446,9 +499,9 @@ if (userToken) {
         organizerTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         selectedTimes,
         deadline, // ✅ Add this line
+        multiSlotConfirmation, // ✅ <-- NEW LINE
       };
       
-  
       const response = await fetch('/api/send-poll-invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -480,11 +533,12 @@ if (userToken) {
   
   if (!isHydrated) return null; // or a loading spinner
 
-
   return (
     <main
-      ref={scrollToTopRef}
-      className="min-h-screen bg-white text-black py-10">
+    ref={scrollToTopRef}
+    className="min-h-screen bg-white text-black py-10 overflow-y-auto"
+  >
+  
 
   <div className="w-full max-w-4xl mx-auto px-4 relative"> {/* this is key! */}
       {/* ✅ Toast anchors to this card-specific relative wrapper */}
@@ -507,12 +561,15 @@ if (userToken) {
     position="top"
   />
 )}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="relative bg-white px-8 py-12 rounded-2xl shadow-2xl w-full flex flex-col gap-8 min-h-[470px] text-[14px]"
-          >
+ <motion.div
+  initial={{ opacity: 0, y: 30 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5 }}
+  className="relative overflow-visible z-0 bg-white px-8 py-12 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.06)] w-full flex flex-col gap-8 min-h-[470px] text-[14px] pb-40"
+
+>
+
+
 
             <form className="flex-1 space-y-6">
 
@@ -529,41 +586,47 @@ if (userToken) {
   isPro={isPro === true}
   trialStartedAt={trialStartedAt}
 />
+{title && organizerFirstName && organizerLastName && organizerEmail && (
+  <div className="relative overflow-visible">
+    <InviteeForm
+      inviteeFirstName={inviteeFirstName}
+      setInviteeFirstName={setInviteeFirstName}
+      inviteeLastName={inviteeLastName}
+      setInviteeLastName={setInviteeLastName}
+      newInviteeEmail={newInviteeEmail}
+      setNewInviteeEmail={setNewInviteeEmail}
+      newInviteeTimezone={newInviteeTimezone}
+      setNewInviteeTimezone={setNewInviteeTimezone}
+      handleAddInvitee={handleAddInvitee}
+      inviteeErrors={inviteeErrors}
+      invitees={invitees}
+      handleRemoveInvitee={handleRemoveInvitee}
+      shakeCount={shakeCount}
+    />
+  </div>
+)}
 
-              {title && organizerFirstName && organizerLastName && organizerEmail && (
-                <InviteeForm
-                  inviteeFirstName={inviteeFirstName}
-                  setInviteeFirstName={setInviteeFirstName}
-                  inviteeLastName={inviteeLastName}
-                  setInviteeLastName={setInviteeLastName}
-                  newInviteeEmail={newInviteeEmail}
-                  setNewInviteeEmail={setNewInviteeEmail}
-                  newInviteeTimezone={newInviteeTimezone}
-                  setNewInviteeTimezone={setNewInviteeTimezone}
-                  handleAddInvitee={handleAddInvitee}
-                  inviteeErrors={inviteeErrors}
-                  invitees={invitees}
-                  handleRemoveInvitee={handleRemoveInvitee}
-                />
-              )}
 
 {(invitees.length > 0 || meetingLink) && (
   <div ref={scrollerRef} className="scroll-mt-20">
-    <HorizontalTimeScroller
-      timeZones={uniqueTimeZones}
-      aiSuggestions={[]}
-      selectedTimes={selectedTimes}
-      onSelectTime={(times) => {
-        setSelectedTimes(times);
-        if (times.length > 0) {
-          setToastMessage('Time Selected');
-          setToastType('success');
-          setToastVisible(true);
-        }
-      }}
-      scrollToAISuggestionsRef={scrollToAISuggestionsRef}
-      scrollToConfirmationRef={scrollToConfirmationRef}
-    />
+   
+   <HorizontalTimeScroller
+  timeZones={uniqueTimeZones}
+  aiSuggestions={[]}
+  selectedTimes={selectedTimes}
+  onSelectTime={(times) => {
+    setSelectedTimes(times);
+    if (times.length > 0) {
+      setToastMessage('Time Selected');
+      setToastType('success');
+      setToastVisible(true);
+    }
+  }}
+  scrollToAISuggestionsRef={scrollToAISuggestionsRef}
+  scrollToConfirmationRef={scrollToConfirmationRef}
+  duration={duration} // ✅ add this
+  setDuration={setDuration} // ✅ optional if you want editable length here
+/>
   </div>
 )}
 
@@ -586,10 +649,13 @@ if (userToken) {
       setMeetingLink={setMeetingLink}
       scrollToMeetingLinkRef={scrollToMeetingLinkRef}
       setJustGeneratedMeetingLink={setJustGeneratedMeetingLink}
+      duration={duration}
+  setDuration={setDuration}
+  multiSlotConfirmation={multiSlotConfirmation}
+  setMultiSlotConfirmation={setMultiSlotConfirmation}
     />
   </div>
 )}
-
             </form>
           </motion.div>
         </div>

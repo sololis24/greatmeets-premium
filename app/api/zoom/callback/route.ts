@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing code or userToken' }, { status: 400 });
   }
 
-  const redirectUri = 'https://96bb-84-86-92-1.ngrok-free.app/api/zoom/callback'; // 👈 must match exactly what you used when requesting the Zoom auth
+  const redirectUri = process.env.ZOOM_REDIRECT_URI!;
+
 
   try {
     const credentials = Buffer.from(
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     console.log('✅ Zoom token stored in Firestore for:', userToken);
 
-    return NextResponse.redirect(`http://localhost:3000/?zoom=connected&token=${userToken}`);
+    return NextResponse.redirect(`https://greatmeets.ai/?zoom=connected&token=${userToken}`);
   } catch (err: any) {
     console.error('❌ Zoom callback error:', err);
     return NextResponse.json(

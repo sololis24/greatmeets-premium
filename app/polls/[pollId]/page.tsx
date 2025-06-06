@@ -16,7 +16,6 @@ export default function VotingPage() {
   const { pollId } = useParams() as { pollId: string };
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const [pollData, setPollData] = useState<PollData | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [thankYouVisible, setThankYouVisible] = useState(false);
@@ -25,10 +24,30 @@ export default function VotingPage() {
   const [toastType, setToastType] = useState<'success' | 'info'>('success');
   const [isParticipantReady, setIsParticipantReady] = useState(false);
   const [timezone, setTimezone] = useState<string>('UTC');
+  const now = new Date();
+  const deadlineDate = pollData?.deadline ? new Date(pollData.deadline) : null;
+  const isPollClosed = deadlineDate ? now > deadlineDate : false;
+  
+  useEffect(() => {
+    const urlToken = searchParams.get('token');
+    const email = localStorage.getItem('participantEmail');
+    const name = localStorage.getItem('participantName');
+    const token = localStorage.getItem('userToken');
+  
+    if (!urlToken && token && pollId) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('token', token);
+      if (email) params.set('email', email);
+      if (name) params.set('name', name);
+      router.replace(`/polls/${pollId}?${params.toString()}`);
+    }
+  }, [pollId, searchParams]);
+
+
 
   useEffect(() => {
     if (!pollId) return;
-
+  
     const fetchPoll = async () => {
       const pollRef = doc(db, 'polls', pollId);
       const pollSnap = await getDoc(pollRef);
@@ -36,18 +55,42 @@ export default function VotingPage() {
         setErrorMessage('This poll no longer exists.');
         return;
       }
-
+  
       const data = pollSnap.data() as PollData;
       setPollData(data);
-
+  
       const participantEmail = localStorage.getItem('participantEmail')?.toLowerCase().trim();
       const invitee = data.invitees?.find((i: any) => i.email?.toLowerCase().trim() === participantEmail);
-      const tz = invitee?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-      setTimezone(tz);
+  
+      // 🧠 Utility to validate IANA timezone
+      const getValidTimezone = (tz: any): string => {
+        return typeof tz === 'string' && tz.includes('/')
+          ? tz
+          : Intl.DateTimeFormat().resolvedOptions().timeZone;
+      };
+  
+      const validTz = getValidTimezone(invitee?.timezone);
+      console.log('🌐 Using timezone:', validTz);
+      setTimezone(validTz);
     };
-
+  
     fetchPoll();
   }, [pollId, searchParams]);
+  
+
+
+  
+  useEffect(() => {
+    const email = localStorage.getItem('participantEmail');
+    const isValid = pollData?.invitees?.some(i => i.email?.toLowerCase().trim() === email);
+  
+    if (email && !isValid) {
+      localStorage.removeItem('participantEmail');
+      localStorage.removeItem('participantName');
+      localStorage.removeItem('userToken');
+    }
+  }, [pollData]);
+  
 
   const handleSelect = (slot: string) => {
     setSelectedSlots((prev) =>
@@ -104,43 +147,75 @@ export default function VotingPage() {
       console.error('❌ Missing participant information.');
       return;
     }
+    const pollRef = doc(db, 'polls', pollId);
+    const pollSnap = await getDoc(pollRef);
+    const pollDocData = pollSnap.data() as PollData & {
+      confirmedSlotsByInvitee?: { [email: string]: string[] };
+    };
+    const confirmedMap = pollDocData.confirmedSlotsByInvitee || {};    
+    const previouslyConfirmed = confirmedMap[participantEmail] || [];
+   
+    const selectedTimes = selectedSlots.map((start) => {
+      const match = pollDocData.selectedTimes.find((s) => s.start === start);
+      return {
+        start,
+        duration: match?.duration || 30,
+      };
+    });
+    const newConfirmations = selectedTimes; // always send confirmations for selected slots
 
-    const previousVote = pollData.votes?.find((v) => v.userToken === userToken);
     const updatedVotes = [
       ...(pollData.votes || []).filter((v) => v.userToken !== userToken),
-      { userToken, name: participantName, selectedSlots },
+      {
+        userToken,
+        name: participantName,
+        selectedSlots,
+        updatedByEmail: participantEmail,
+      },
     ];
 
     try {
-      const pollRef = doc(db, 'polls', pollId);
       await updateDoc(pollRef, {
         votes: updatedVotes,
         updatedByEmail: participantEmail,
+        confirmedSlotsByInvitee: {
+          ...confirmedMap,
+          [participantEmail]: selectedSlots, // reset to reflect only current votes
+        },
+        
       });
 
-      const formattedSelectedTimes = selectedSlots.map((iso) =>
-        new Date(iso).toLocaleString(undefined, {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: timezone,
-        })
-      );
+      for (let i = 0; i < newConfirmations.length; i++) {
+        const slot = newConfirmations[i];
 
-      const endpoint = previousVote ? '/api/vote-update-confirmation-invitee' : '/api/send-thank-you';
+        await fetch('/api/vote-update-confirmation-invitee', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            participantEmail,
+            participantName,
+            selectedTimes: [slot],
+            organizerName,
+            pollLink,
+            deadline: pollData.deadline,
+            timezone,
+            slotIndex: i + 1,
+            totalSlots: newConfirmations.length,
+          }),
+        });
+      }
 
-      await fetch(endpoint, {
+      await fetch('/api/send-thank-you', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           participantEmail,
           participantName,
-          selectedTimes: formattedSelectedTimes,
+          selectedTimes,
           organizerName,
           pollLink,
           deadline: pollData.deadline,
+          timezone,
         }),
       });
 
@@ -159,7 +234,6 @@ export default function VotingPage() {
       setToastMessage('Thanks for voting!');
       setToastType('success');
       setThankYouVisible(true);
-
       setTimeout(() => {
         setThankYouVisible(false);
         setTimeout(() => {
@@ -183,11 +257,19 @@ export default function VotingPage() {
       searchParams.get('email') ||
       '';
 
-    const participantToken =
+      let participantToken =
       localStorage.getItem('userToken') ||
       searchParams.get('token') ||
       '';
-
+    
+ 
+    if (!participantToken && pollData && Array.isArray(pollData.invitees)) {
+      const participantEmail = localStorage.getItem('participantEmail')?.toLowerCase().trim();
+      const matchingInvitee = pollData.invitees.find(i => i.email?.toLowerCase().trim() === participantEmail);
+      participantToken = matchingInvitee?.token || '';
+    }
+    
+    
     if (!pollId || !participantToken) {
       setErrorMessage('Missing poll ID or participant token.');
       return;
@@ -245,24 +327,44 @@ export default function VotingPage() {
           position="top"
         />
       )}
-      <main className="min-h-screen flex items-center justify-center p-8">
-        <motion.div className="bg-white p-10 rounded-3xl shadow-2xl max-w-2xl w-full space-y-8">
-          <PollHeader title={pollData.title} timezone={timezone} />
-          <PollTimeSlotList
-            slots={pollData.selectedTimes}
-            selected={selectedSlots}
-            onSelect={handleSelect}
-            timezone={timezone}
-          />
-          {errorMessage && <div className="text-red-500 font-medium">{errorMessage}</div>}
-          <PollControls
-            onSubmit={isParticipantReady ? handleSubmitVote : () => {}}
-            onCantAttend={isParticipantReady ? confirmCantAttend : () => {}}
-            disabled={!isParticipantReady}
-          />
-          <PollFooter />
-        </motion.div>
-      </main>
+   <main className="min-h-screen flex items-center justify-center p-8">
+  <motion.div className="bg-white p-10 rounded-3xl shadow-2xl max-w-2xl w-full space-y-8">
+  {isPollClosed ? (
+  <div className="text-center space-y-3">
+    <h2 className="text-xl font-semibold text-blue-600">⏳ This poll has closed.</h2>
+    <p className="text-gray-500">
+  The poll organized by <strong className="text-base sm:text-lg">{pollData.organizerName}</strong> has ended.
+</p>
+<button
+  onClick={() => router.push('/')}
+  className="mt-6 px-6 py-2 text-sm rounded-full text-blue-600 border border-blue-600 hover:bg-blue-50 transition"
+>
+  Return Home
+</button>
+
+  </div>
+) : (
+
+      <>
+        <PollHeader title={pollData.title} timezone={timezone} />
+        <PollTimeSlotList
+          slots={pollData?.selectedTimes || []}
+          selected={selectedSlots}
+          onSelect={handleSelect}
+          timezone={timezone}
+        />
+        {errorMessage && <div className="text-red-500 font-medium">{errorMessage}</div>}
+        <PollControls
+          onSubmit={isParticipantReady ? handleSubmitVote : () => {}}
+          onCantAttend={isParticipantReady ? confirmCantAttend : () => {}}
+          disabled={!isParticipantReady}
+        />
+        <PollFooter />
+      </>
+    )}
+  </motion.div>
+</main>
+
     </>
   );
 }

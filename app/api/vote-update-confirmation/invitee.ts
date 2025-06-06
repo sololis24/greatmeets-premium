@@ -1,4 +1,20 @@
 import { Resend } from 'resend';
+import { parseISO, isValid } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+
+const formatTimeRange = (iso: string, timeZone: string, durationMin: number) => {
+  const start = parseISO(iso);
+  if (!isValid(start)) {
+    console.warn('❌ Invalid time value passed to formatTimeRange:', iso);
+    return 'Invalid time';
+  }
+
+  const end = new Date(start.getTime() + durationMin * 60 * 1000);
+  const dateStr = formatInTimeZone(start, timeZone, 'eee, MMM d');
+  const startStr = formatInTimeZone(start, timeZone, 'HH:mm');
+  const endStr = formatInTimeZone(end, timeZone, 'HH:mm');
+  return `${dateStr}, ${startStr}–${endStr}`;
+};
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -10,13 +26,18 @@ export async function POST(req: Request) {
     organizerName,
     pollLink,
     deadline,
-    meetingLink, // ✅ now handled
+    meetingLink, 
+    timezone = 'UTC',// ✅ now handled
   } = await req.json();
 
+  
   // ✨ Format selected times
   const formattedTimesHtml = (selectedTimes || [])
-    .map((time: string) => `<div style="font-size: 18px; margin: 4px 0;">${time}</div>`)
-    .join('');
+  .map(({ start, duration }: { start: string; duration: number }) =>
+    `<div style="font-size: 18px; margin: 4px 0;">${formatTimeRange(start, 'UTC', duration)}</div>`
+  )
+  .join('');
+
 
   // ✨ Format deadline if available
   let formattedDeadline = '';

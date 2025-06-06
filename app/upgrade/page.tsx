@@ -75,7 +75,7 @@ export default function UpgradePage() {
           disabled={loading}
           className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:to-indigo-700 text-white rounded-full font-semibold text-lg shadow-md transition-all duration-300"
         >
-          {loading ? 'Redirecting to Stripe…' : 'Upgrade for €9/month'}
+          {loading ? 'Redirecting to Stripe…' : 'Upgrade for €12/month'}
         </button>
 
         <p className="text-sm text-gray-400 pt-2">

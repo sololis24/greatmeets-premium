@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz';
+import { parseISO, isValid } from 'date-fns';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -11,6 +12,7 @@ export async function POST(req: Request) {
       participantName,
       pollLink,
       deadline,
+      organizerTimezone = 'UTC' // Fallback
     } = await req.json();
 
     if (!organizerEmail || !participantName || !pollLink) {
@@ -20,16 +22,18 @@ export async function POST(req: Request) {
 
     let formattedDeadline = '';
     if (deadline) {
-      const deadlineDate = new Date(deadline);
-      const utcString = formatInTimeZone(deadlineDate, 'UTC', "EEEE, d MMM yyyy, HH:mm 'UTC'");
-      const localString = deadlineDate.toLocaleString(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      formattedDeadline = `${utcString} / ${localString}`;
+      const parsed = parseISO(deadline); // parse ISO input
+      if (isValid(parsed)) {
+        const utc = zonedTimeToUtc(parsed, organizerTimezone); // adjust to proper TZ-aware UTC
+        formattedDeadline = formatInTimeZone(utc, organizerTimezone, "EEEE, d MMM yyyy, HH:mm") +
+          ` (${organizerTimezone.replace(/_/g, ' ')})`;
+    
+        console.log('🧭 Raw deadline:', deadline);
+        console.log('🕒 Corrected UTC:', utc.toISOString());
+        console.log('📝 Final formatted deadline:', formattedDeadline);
+      } else {
+        console.warn('⚠️ Invalid deadline provided:', deadline);
+      }
     }
 
     const html = `
@@ -61,7 +65,6 @@ export async function POST(req: Request) {
     });
 
     return new Response('Vote notification email sent.', { status: 200 });
-
   } catch (error) {
     console.error('❌ Error sending vote notification email:', error);
     return new Response('Failed to send vote notification email', { status: 500 });

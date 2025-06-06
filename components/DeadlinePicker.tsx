@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { motion } from 'framer-motion';
 import 'react-day-picker/dist/style.css';
+import { Listbox } from '@headlessui/react';
+import { ChevronDownIcon, CalendarDaysIcon } from '@heroicons/react/20/solid';
 
-const roundToNearest15 = (date: Date) => {
-  const ms = 1000 * 60 * 15;
-  return new Date(Math.round(date.getTime() / ms) * ms);
-};
-
+const hours = Array.from({ length: 24 }, (_, h) => h);
+const minutes = [0, 15, 30, 45];
+const padded = (n: number) => n.toString().padStart(2, '0');
 
 type Props = {
   hasDeadline: boolean;
@@ -35,16 +35,11 @@ export default function DeadlinePicker({
 }: Props) {
   const [selectedDeadlineDate, setSelectedDeadlineDate] = useState(() => {
     const now = new Date();
-    const tomorrowAtNine = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0, 0);
-    return tomorrowAtNine;
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0, 0);
   });
-  
-  
-  
 
   const calendarRef = useRef(null);
 
-  // Close calendar on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -55,109 +50,146 @@ export default function DeadlinePicker({
         setOpenCalendarIndex(null);
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openCalendarIndex]);
 
+  const renderTimeSelectors = (
+    <div className="flex gap-2 items-center justify-center md:justify-start w-full flex-col sm:flex-row">
+      <div className="relative w-full sm:w-[100px]">
+        <Listbox
+          value={selectedDeadlineDate.getHours()}
+          onChange={(hour) => {
+            const d = new Date(selectedDeadlineDate);
+            d.setHours(hour);
+            setSelectedDeadlineDate(d);
+          }}
+        >
+          <div className="relative">
+            <Listbox.Button className="w-full flex justify-between items-center px-3 py-2 rounded-xl border border-gray-300 text-base bg-white shadow-sm focus:ring-2 focus:ring-teal-400">
+              {padded(selectedDeadlineDate.getHours())}
+              <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+            </Listbox.Button>
+            <Listbox.Options className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-md max-h-60 overflow-auto">
+              {hours.map((h) => (
+                <Listbox.Option
+                  key={h}
+                  value={h}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 ${
+                      active ? 'bg-teal-100 text-teal-800' : 'text-gray-800'
+                    }`
+                  }
+                >
+                  {padded(h)}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
+      </div>
+
+      <span className="text-gray-500 hidden sm:inline">:</span>
+
+      <div className="relative w-full sm:w-[100px]">
+        <Listbox
+          value={selectedDeadlineDate.getMinutes()}
+          onChange={(min) => {
+            const d = new Date(selectedDeadlineDate);
+            d.setMinutes(min);
+            setSelectedDeadlineDate(d);
+          }}
+        >
+          <div className="relative">
+            <Listbox.Button className="w-full flex justify-between items-center px-3 py-2 rounded-xl border border-gray-300 text-base bg-white shadow-sm focus:ring-2 focus:ring-teal-400">
+              {padded(selectedDeadlineDate.getMinutes())}
+              <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+            </Listbox.Button>
+            <Listbox.Options className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-md max-h-60 overflow-auto">
+              {minutes.map((m) => (
+                <Listbox.Option
+                  key={m}
+                  value={m}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 ${
+                      active ? 'bg-teal-100 text-teal-800' : 'text-gray-800'
+                    }`
+                  }
+                >
+                  {padded(m)}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {hasDeadline && !deadline && (
-        <div className="flex flex-wrap items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
-          {/* 📅 Date Picker */}
-          <div className="relative inline-block" style={{ overflow: 'visible' }}>
-            <button
-              id="calendar-trigger-deadline"
-              type="button"
-              onClick={() =>
-                setOpenCalendarIndex(openCalendarIndex === 'deadline' ? null : 'deadline')
-              }
-              className="p-3 w-[160px] border border-gray-300 rounded-xl shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-teal-400 text-gray-700 bg-white"
-            >
-              {selectedDeadlineDate.toLocaleDateString('en-GB')} 📅
-            </button>
-
-            {openCalendarIndex === 'deadline' && (
-              <motion.div
-                ref={calendarRef}
-                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="absolute bottom-full mb-2 left-0 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-3"
-                style={{
-                  width: 'fit-content',
-                  minWidth: '260px',
-                  overflow: 'visible',
+        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm w-full">
+          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
+            <div className="flex flex-col md:flex-row md:items-center md:gap-6 items-stretch gap-3">
+              <div className="relative w-full md:w-[180px]">
+                <button
+                  id="calendar-trigger-deadline"
+                  type="button"
+                  onClick={() =>
+                    setOpenCalendarIndex(openCalendarIndex === 'deadline' ? null : 'deadline')
+                  }
+                  className="w-full h-[44px] px-4 border border-gray-300 rounded-xl shadow-sm text-base bg-white text-gray-700 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-teal-400"
+                >
+                  <span>{selectedDeadlineDate.toLocaleDateString('en-GB')}</span>
+                  <CalendarDaysIcon className="w-5 h-5 text-gray-500 ml-2" />
+                </button>
+                {openCalendarIndex === 'deadline' && (
+                  <motion.div
+                    ref={calendarRef}
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    className="absolute bottom-full mb-2 left-0 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-3"
+                    style={{ width: 'fit-content', minWidth: '260px', overflow: 'visible' }}
+                  >
+                    <DayPicker
+                      mode="single"
+                      selected={selectedDeadlineDate}
+                      onSelect={(date) => {
+                        if (!date) return;
+                        const updated = new Date(date);
+                        updated.setHours(selectedDeadlineDate.getHours());
+                        updated.setMinutes(selectedDeadlineDate.getMinutes());
+                        updated.setSeconds(0, 0);
+                        setSelectedDeadlineDate(updated);
+                        setOpenCalendarIndex(null);
+                      }}
+                      fromDate={new Date()}
+                    />
+                  </motion.div>
+                )}
+              </div>
+              {renderTimeSelectors}
+            </div>
+            <div className="w-full md:w-auto text-center md:text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  const finalDate = new Date(selectedDeadlineDate);
+                  finalDate.setSeconds(0, 0);
+                  setDeadline(finalDate.toISOString());
+                  setToastMessage('Deadline added!');
+                  setToastType('success');
+                  setToastVisible(true);
                 }}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white text-base font-medium py-2 px-6 rounded-full shadow-sm w-full md:w-auto"
               >
-                <DayPicker
-                  mode="single"
-                  selected={selectedDeadlineDate}
-
-                 onSelect={(date) => {
-  if (!date) return;
-  const updated = new Date(date);
-  updated.setHours(selectedDeadlineDate.getHours());
-  updated.setMinutes(selectedDeadlineDate.getMinutes());
-  updated.setSeconds(0, 0);
-  setSelectedDeadlineDate(updated);
-  setOpenCalendarIndex(null);
-}}
-
-                  fromDate={new Date()}
-                />
-              </motion.div>
-            )}
+                Add Deadline
+              </button>
+            </div>
           </div>
-
-          {/* ⏰ Time Selectors */}
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedDeadlineDate.getHours().toString().padStart(2, '0')}
-              onChange={(e) => {
-                const d = new Date(selectedDeadlineDate);
-                d.setHours(Number(e.target.value));
-                setSelectedDeadlineDate(d);
-              }}
-              className="p-2 px-3 rounded-xl border border-gray-300 text-base bg-white shadow-sm focus:ring-2 focus:ring-teal-400"
-            >
-              {Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')).map((h) => (
-                <option key={h} value={h}>{h}</option>
-              ))}
-            </select>
-            <span className="text-gray-500">:</span>
-            <select
-              value={selectedDeadlineDate.getMinutes().toString().padStart(2, '0')}
-              onChange={(e) => {
-                const d = new Date(selectedDeadlineDate);
-                d.setMinutes(Number(e.target.value));
-                setSelectedDeadlineDate(d);
-              }}
-              className="p-2 px-3 rounded-xl border border-gray-300 text-base bg-white shadow-sm focus:ring-2 focus:ring-teal-400"
-            >
-              {['00', '15', '30', '45'].map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* ✅ Add Button */}
-          <button
-            type="button"
-            onClick={() => {
-              const finalDate = new Date(selectedDeadlineDate);
-              finalDate.setSeconds(0, 0);
-              setDeadline(finalDate.toISOString());
-
-              setToastMessage('Deadline added!');
-              setToastType('success');
-              setToastVisible(true);
-            }}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white text-base font-medium py-2 px-4 rounded-xl shadow-sm"
-          >
-            Add Deadline
-          </button>
         </div>
       )}
 

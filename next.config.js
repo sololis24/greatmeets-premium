@@ -5,10 +5,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  env: {
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID: '911296639750-v97gdc4cetc5uk05shartulo4ilfqs9r.apps.googleusercontent.com',
-    NEXT_PUBLIC_GOOGLE_REDIRECT_URI: 'https://96bb-84-86-92-1.ngrok-free.app/api/google/callback',
-  },
+
   webpack(config) {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),

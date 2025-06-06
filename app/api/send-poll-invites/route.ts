@@ -1,47 +1,117 @@
 import { NextResponse } from 'next/server';
 import { resend } from '@/lib/resend';
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone, utcToZonedTime } from 'date-fns-tz';
+import type { TimeSlot } from '@/types/index';
+import { isValid, parseISO } from 'date-fns';
+
+const formatTimeRange = (iso: string, timeZone: string, durationMin: number) => {
+  const start = parseISO(iso);
+  if (!isValid(start)) {
+    console.warn('❌ Invalid time value passed to formatTimeRange:', iso);
+    return 'Invalid time';
+  }
+
+  const end = new Date(start.getTime() + durationMin * 60 * 1000);
+  const dateStr = formatInTimeZone(start, timeZone, "eee, MMM d");
+  const startStr = formatInTimeZone(start, timeZone, "HH:mm");
+  const endStr = formatInTimeZone(end, timeZone, "HH:mm");
+
+  return `${dateStr}, ${startStr}–${endStr} (${timeZone.replace(/_/g, ' ')})`;
+};
+
+
+// ✅ Rate-limited safe email sender
+async function safeSendEmail(data: Parameters<typeof resend.emails.send>[0], retries = 3): Promise<void> {
+  try {
+    await resend.emails.send(data);
+  } catch (err: any) {
+    const msg = err?.message || '';
+    if (retries > 0 && msg.includes('Too many requests')) {
+      console.warn('⚠️ Rate limit hit. Retrying...');
+      await new Promise((res) => setTimeout(res, 1000));
+      return safeSendEmail(data, retries - 1);
+    }
+    throw err;
+  }
+}
 
 export async function POST(req: Request) {
   try {
+    type PollRequestBody = {
+      invitees: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        timezone: string;
+        token: string;
+      }[];
+      pollLink: string;
+      organizerName: string;
+      organizerEmail: string;
+      organizerTimezone: string;
+      selectedTimes: TimeSlot[];
+      meetingLink?: string;
+      meetingTitle?: string;
+      deadline?: string;
+    };
+
+    const body: PollRequestBody = await req.json();
     const {
       invitees,
       pollLink,
       organizerName,
       organizerEmail,
       organizerTimezone,
-      selectedTimes = [],
+      selectedTimes,
       meetingLink,
       meetingTitle,
       deadline
-    } = await req.json();
+    } = body;
 
-    if (!invitees || !pollLink || !organizerName || !organizerEmail || !selectedTimes) {
-      return new NextResponse('Missing fields in request.', { status: 400 });
+    if (
+      !invitees?.length ||
+      !pollLink ||
+      !organizerName ||
+      !organizerEmail ||
+      !Array.isArray(selectedTimes) ||
+      selectedTimes.length === 0
+    ) {
+      console.warn('⚠️ Poll creation request missing critical fields or selectedTimes is empty.');
+      return new NextResponse('Missing or invalid fields in request.', { status: 400 });
     }
 
     const normalizeEmail = (email: string) => email?.toLowerCase().trim();
-    const formatDate = (time: string, timeZone: string) => {
-      const formatted = formatInTimeZone(time, timeZone, "EEEE, d MMM yyyy, HH:mm");
-      return `${formatted} (${timeZone.replace('_', ' ')})`;
-    };
-    
-    
-    
 
-    const formattedTimes = selectedTimes.map((time: string) =>
-      formatDate(time, organizerTimezone || 'UTC')
+    const formattedTimes = selectedTimes.map(({ start, duration }) =>
+      formatTimeRange(start, organizerTimezone || 'UTC', duration)
     );
 
-    const formattedDeadline = deadline
-      ? formatDate(deadline, organizerTimezone || 'UTC')
+    const parsedDeadline = deadline ? parseISO(deadline) : null;
+    const formattedDeadline = parsedDeadline && isValid(parsedDeadline)
+      ? formatInTimeZone(parsedDeadline, organizerTimezone || 'UTC', "EEEE, d MMM yyyy, HH:mm") + ` (${(organizerTimezone || 'UTC').replace(/_/g, ' ')})`
       : null;
 
     const inviteeResults: { name: string; email: string; status: string; message?: string }[] = [];
 
-    const inviteePromises = invitees.map(async (invitee: any) => {
+    const filteredInvitees = invitees.filter(
+      (i) => i.email?.toLowerCase().trim() !== organizerEmail.toLowerCase().trim()
+    );
+
+    if (filteredInvitees.length !== invitees.length) {
+      console.log('⚠️ Organizer email found in invitee list and removed:', organizerEmail);
+    }
+
+    const inviteePromises = filteredInvitees.map(async (invitee: any) => {
       const email = normalizeEmail(invitee.email);
-      const timezone = invitee.timezone || 'UTC';
+    
+      const rawTimezone = invitee.timezone;
+      const isLikelyGuessed = !rawTimezone || rawTimezone === Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const timezone = isLikelyGuessed ? 'UTC' : rawTimezone;
+      
+      if (isLikelyGuessed) {
+        console.warn(`⚠️ Timezone for invitee ${email} was guessed or missing. Defaulting to UTC.`);
+      }
+      
       const fullName = `${invitee.firstName} ${invitee.lastName}`.trim();
       const token = invitee.token;
 
@@ -53,11 +123,14 @@ export async function POST(req: Request) {
 
       const inviteLink = `${pollLink}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`;
 
-      const participantFormattedTimes = selectedTimes.map((time: string) =>
-        formatDate(time, timezone)
+      const participantFormattedTimes = selectedTimes.map(({ start, duration }) =>
+        formatTimeRange(start, timezone, duration)
       );
 
-      const participantFormattedDeadline = deadline ? formatDate(deadline, timezone) : null;
+      const participantParsedDeadline = deadline ? parseISO(deadline) : null;
+      const participantFormattedDeadline = participantParsedDeadline && isValid(participantParsedDeadline)
+        ? formatInTimeZone(participantParsedDeadline, timezone, "EEEE, d MMM yyyy, HH:mm") + ` (${timezone.replace(/_/g, ' ')})`
+        : null;
 
       const html = `
         <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
@@ -67,7 +140,7 @@ export async function POST(req: Request) {
             ${meetingTitle ? `<h2 style="font-size: 20px; color: #4f46e5; font-weight: bold; margin: 10px 0;">${meetingTitle}</h2>` : ''}
             <p style="font-size: 16px; color: #333;">Suggested Times:</p>
             <p style="font-size: 15px; color: #111;">${participantFormattedTimes.join('<br/>')}</p>
-            ${participantFormattedDeadline ? `<p style="font-size: 14px; color: #999; margin-top: 12px;">Vote by the deadline: <strong>${participantFormattedDeadline}</strong></p>` : ''}
+            ${participantFormattedDeadline ? `<p style="font-size: 14px; color: #999; margin-top: 12px;">Vote by the deadline (converted to your local time): <strong>${participantFormattedDeadline}</strong></p>` : ''}
             <a href="${inviteLink}" style="background: linear-gradient(90deg, #34d399, #4f46e5); color: white; text-decoration: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; display: inline-block; margin-top: 20px;">Vote Now</a>
             <p style="font-size: 14px; color: #666666; margin-top: 30px;">
               Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.
@@ -77,7 +150,7 @@ export async function POST(req: Request) {
       `;
 
       try {
-        await resend.emails.send({
+        await safeSendEmail({
           from: 'Great Meets <noreply@greatmeets.ai>',
           to: email,
           subject: `${organizerName} invited you to a Great Meet${meetingTitle ? `: ${meetingTitle}` : ''}! 🎉`,
@@ -94,16 +167,15 @@ export async function POST(req: Request) {
     await Promise.all(inviteePromises);
 
     const statusListHtml = inviteeResults
-      .map((result) => {
-        if (result.status === 'success') {
-          return `✅ ${result.name} (${result.email})`;
-        } else if (result.status === 'error') {
-          return `❌ ${result.name} (${result.email}) - ${result.message}`;
-        } else {
-          return `⚠️ ${result.name} - ${result.message}`;
-        }
-      })
+      .map((result) => result.status === 'success'
+        ? `✅ ${result.name} (${result.email})`
+        : `❌ ${result.name} (${result.email}) - ${result.message}`)
       .join('<br/>');
+
+    if (formattedTimes.length === 0) {
+      console.warn('❌ Organizer email not sent: formattedTimes is empty.');
+      return new NextResponse(JSON.stringify({ success: false, error: 'No valid time slots' }), { status: 400 });
+    }
 
     const organizerHtml = `
       <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
@@ -124,12 +196,17 @@ export async function POST(req: Request) {
       </div>
     `;
 
-    await resend.emails.send({
-      from: 'Great Meets <noreply@greatmeets.ai>',
-      to: organizerEmail,
-      subject: `✅ Your Great Meet is Live!`,
-      html: organizerHtml,
-    });
+    try {
+      await safeSendEmail({
+        from: 'Great Meets <noreply@greatmeets.ai>',
+        to: organizerEmail,
+        subject: `✅ Your Great Meet is Live!`,
+        html: organizerHtml,
+      });
+      console.log(`✅ Confirmation email sent to organizer: ${organizerEmail}`);
+    } catch (err: any) {
+      console.error(`❌ Failed to send confirmation email to organizer (${organizerEmail}):`, err?.message || err);
+    }
 
     return new NextResponse(JSON.stringify({ success: true, inviteeResults }), { status: 200 });
   } catch (error: any) {

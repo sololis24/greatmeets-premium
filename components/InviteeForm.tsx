@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import TimezoneSelect from '../components/TimezoneSelect';
 import { motion } from 'framer-motion';
 
@@ -25,6 +25,7 @@ interface Props {
   inviteeErrors: Record<string, string>;
   invitees: Invitee[];
   handleRemoveInvitee: (index: number) => void;
+  shakeCount: number;
 }
 
 function isValidEmail(email: string): boolean {
@@ -32,7 +33,6 @@ function isValidEmail(email: string): boolean {
   const basicRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const blacklistedDomains = ['mailinator.com', 'tempmail.com', '10minutemail.com'];
   const domain = trimmed.split('@')[1];
-
   return basicRegex.test(trimmed) && !blacklistedDomains.includes(domain);
 }
 
@@ -49,9 +49,20 @@ export default function InviteeForm({
   inviteeErrors,
   invitees,
   handleRemoveInvitee,
+  shakeCount,
 }: Props) {
   const capitalizeWords = (str: string) =>
     str.replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const [hasBlurred, setHasBlurred] = useState(false);
+  const [hasRendered, setHasRendered] = useState(false);
+
+  useEffect(() => {
+    setHasRendered(true);
+  }, []);
+
+  const isEmailValid = isValidEmail(newInviteeEmail);
+  const shouldShowEmailError = !!newInviteeEmail && !isEmailValid && hasBlurred;
 
   return (
     <motion.div
@@ -66,11 +77,11 @@ export default function InviteeForm({
         <input
           type="text"
           placeholder="Their First Name"
-          className={`w-full p-4 border rounded-lg bg-gray-50 transition-all duration-300 ${
-            inviteeErrors.name ? 'border-red-500' : 'border-transparent border-b border-gray-300'
-          } focus:border-b-4 ${
-            inviteeErrors.name ? 'focus:border-red-500' : 'focus:border-teal-500'
-          } ${inviteeFirstName ? 'not-italic' : 'italic'}`}
+          className={`w-full p-4 rounded-lg transition-all duration-300 ${
+            inviteeErrors.name
+              ? 'border-b border-red-500 focus:border-red-500 focus:border-b-4'
+              : 'border-b border-gray-300 focus:border-teal-500 focus:border-b-4'
+          } ${inviteeFirstName ? 'bg-white not-italic' : 'bg-gray-50 italic'}`}
           value={inviteeFirstName}
           onChange={(e) => setInviteeFirstName(capitalizeWords(e.target.value))}
         />
@@ -78,11 +89,11 @@ export default function InviteeForm({
         <input
           type="text"
           placeholder="Their Last Name"
-          className={`w-full p-4 border rounded-lg bg-gray-50 transition-all duration-300 ${
-            inviteeErrors.name ? 'border-red-500' : 'border-transparent border-b border-gray-300'
-          } focus:border-b-4 ${
-            inviteeErrors.name ? 'focus:border-red-500' : 'focus:border-teal-500'
-          } ${inviteeLastName ? 'not-italic' : 'italic'}`}
+          className={`w-full p-4 rounded-lg transition-all duration-300 ${
+            inviteeErrors.name
+              ? 'border-b border-red-500 focus:border-red-500 focus:border-b-4'
+              : 'border-b border-gray-300 focus:border-teal-500 focus:border-b-4'
+          } ${inviteeLastName ? 'bg-white not-italic' : 'bg-gray-50 italic'}`}
           value={inviteeLastName}
           onChange={(e) => setInviteeLastName(capitalizeWords(e.target.value))}
         />
@@ -92,31 +103,46 @@ export default function InviteeForm({
         <p className="text-red-500 text-base mt-1">{inviteeErrors.name}</p>
       )}
 
-      <input
-        type="email"
-        placeholder="Enter Their Email Address"
-        className={`w-full p-4 border rounded-lg bg-gray-50 transition-all duration-300 ${
-          inviteeErrors.email ? 'border-red-500' : 'border-transparent border-b border-gray-300'
-        } focus:border-b-4 ${
-          inviteeErrors.email ? 'focus:border-red-500' : 'focus:border-teal-500'
-        } ${newInviteeEmail ? 'not-italic' : 'italic'}`}
-        value={newInviteeEmail}
-        onChange={(e) => setNewInviteeEmail(e.target.value)}
-      />
-      {inviteeErrors.email && (
-        <p className="text-red-500 text-base mt-1">{inviteeErrors.email}</p>
+      <motion.div
+        key={shakeCount}
+        animate={
+          (inviteeErrors.email || shouldShowEmailError)
+            ? { x: [0, -12, 12, -12, 0] }
+            : {}
+        }
+        transition={{ duration: 0.5 }}
+      >
+        <input
+          type="email"
+          placeholder="Enter Their Email Address"
+          className={`w-full p-4 rounded-lg transition-all duration-300 ${
+            inviteeErrors.email && hasBlurred
+              ? 'border-b border-red-500 focus:border-red-500 focus:border-b-4'
+              : 'border-b border-gray-300 focus:border-teal-500 focus:border-b-4'
+          } ${newInviteeEmail ? 'bg-white not-italic' : 'bg-gray-50 italic'}`}
+          value={newInviteeEmail}
+          onChange={(e) => setNewInviteeEmail(e.target.value)}
+          onBlur={() => setHasBlurred(true)}
+        />
+      </motion.div>
+
+      {(inviteeErrors.email || shouldShowEmailError) && (
+        <p className="text-red-500 text-sm mt-1">
+          {inviteeErrors.email || 'Is that email valid?'}
+        </p>
       )}
 
       <TimezoneSelect value={newInviteeTimezone} onChange={setNewInviteeTimezone} />
 
       <motion.button
+        key={`btn-${shakeCount}`}
         type="button"
         onClick={handleAddInvitee}
-        className="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white text-lg font-semibold py-4 rounded-full transition mt-4"
-        animate={Object.keys(inviteeErrors).length > 0 ? { x: [0, -10, 10, -10, 0] } : {}}
+        animate={hasRendered && shakeCount > 0 ? { x: [0, -10, 10, -10, 0] } : {}}
         transition={{ duration: 0.4 }}
+        className="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white text-lg font-semibold py-4 rounded-full transition mt-4"
       >
-        + Add Invitee
+        Add Invitee
       </motion.button>
 
       {invitees.length > 0 && (

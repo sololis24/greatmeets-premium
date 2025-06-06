@@ -29,7 +29,7 @@ export default function PollResultHeader({
         All Times Shown In <span className="font-semibold">{timezone}</span> Timezone
       </p>
       <p className="text-gray-600 font-medium text-lg">
-        Total Participants who voted: {totalVotes} / {totalInvitees}
+        {totalVotes} / {totalInvitees} voted
       </p>
     </div>
   );

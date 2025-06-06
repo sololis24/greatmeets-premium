@@ -25,8 +25,11 @@
 
 /* === Full Height Fix === */
 html, body {
-  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
+
 
 @layer base {
   html, body {
@@ -265,3 +268,22 @@ html {
   }
 }
 
+.react-select__menu {
+  z-index: 9999 !important;
+  max-height: 250px !important;
+  overflow-y: auto !important;
+  background-color: white;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  margin-top: 4px; /* ✅ Adds spacing below the control */
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+select:focus {
+  outline: none;
+}

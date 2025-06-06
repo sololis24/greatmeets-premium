@@ -17,7 +17,7 @@ export function isTrialActive(): boolean {
       const diffInMs = now.getTime() - trialStart.getTime();
       const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
   
-      return diffInDays < 14;
+      return diffInDays < 7;
     } catch (err) {
       console.error('Failed to parse trialStartedAt', err);
       return false;

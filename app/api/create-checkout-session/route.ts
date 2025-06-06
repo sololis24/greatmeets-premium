@@ -14,15 +14,15 @@ export async function POST() {
   });
 
   try {
-    // 👤 Replace this with your auth/session logic to get user email
+    // TODO: Replace this with your real auth/session logic
     const userEmail = 'replace-this@example.com';
     if (!userEmail) {
       return NextResponse.json({ error: 'Missing user email' }, { status: 400 });
     }
 
-    // 🔍 Check Firestore to see if user has already used a trial
     const userRef = doc(db, 'users', userEmail.toLowerCase().trim());
     const userSnap = await getDoc(userRef);
+
     const alreadyUsedTrial = userSnap.exists() && userSnap.data()?.trialUsed === true;
 
     console.log(`📦 Firestore trialUsed: ${alreadyUsedTrial}`);
@@ -30,10 +30,9 @@ export async function POST() {
     // 🔧 Create (or reuse) Stripe customer
     const customerList = await stripe.customers.list({ email: userEmail, limit: 1 });
     const existingCustomer = customerList.data[0];
-    const customer = existingCustomer || await stripe.customers.create({
-      email: userEmail,
-    });
+    const customer = existingCustomer || await stripe.customers.create({ email: userEmail });
 
+    // 🧾 Create the Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -52,14 +51,19 @@ export async function POST() {
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/upgrade`,
     });
 
-    // ✅ Mark trial as used in Firestore if it wasn't
+    // ✅ Mark trial as used and store start date if not already used
     if (!alreadyUsedTrial) {
-      await setDoc(userRef, { trialUsed: true }, { merge: true });
-      console.log(`✅ Firestore trialUsed set for ${userEmail}`);
+      await setDoc(userRef, {
+        trialUsed: true,
+        trialStartDate: new Date().toISOString(),
+      }, { merge: true });
+
+      console.log(`✅ Firestore trialUsed + trialStartDate set for ${userEmail}`);
     }
 
-    console.log('✅ Session created:', session.id);
+    console.log('✅ Stripe session created:', session.id);
     return NextResponse.json({ url: session.url });
+
   } catch (error: any) {
     console.error('❌ Stripe error:', error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });

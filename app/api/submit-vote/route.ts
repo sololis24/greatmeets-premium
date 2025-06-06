@@ -6,7 +6,14 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { pollId, selectedSlots, participantName, participantEmail, organizerName, organizerEmail } = await req.json();
+    const {
+      pollId,
+      selectedSlots,
+      participantName,
+      participantEmail,
+      organizerName,
+      organizerEmail,
+    } = await req.json();
 
     const pollRef = doc(db, 'polls', pollId);
     const pollSnap = await getDoc(pollRef);
@@ -25,7 +32,16 @@ export async function POST(req: Request) {
 
     await updateDoc(pollRef, { votes: updatedVotes });
 
-    // Send the two emails 🚀
+    const pollLink = `${process.env.NEXT_PUBLIC_SITE_URL}/polls/${pollId}/results`;
+    const selectedTimes = selectedSlots.map((start: string) => {
+      const slotMatch = pollData.selectedTimes?.find((s: any) => s.start === start);
+      return {
+        start,
+        duration: slotMatch?.duration || 30,
+      };
+    });
+
+    // ✅ Send vote notification to organizer
     await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-vote-notification`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,26 +49,50 @@ export async function POST(req: Request) {
         organizerEmail,
         organizerName,
         participantName,
-        pollLink: `${process.env.NEXT_PUBLIC_SITE_URL}/polls/${pollId}/results`
+        pollLink,
+        deadline: pollData.deadline || null,
       }),
     });
 
+    // ✅ Send thank-you email to participant
     await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-thank-you`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        participantEmail,
+        participantEmail: participantEmail?.trim().toLowerCase(),
         participantName,
-        selectedTimes: selectedSlots.map((iso: string) => new Date(iso).toLocaleString()).join('<br/>'),
+        selectedTimes,
         organizerName,
-        pollLink: `${process.env.NEXT_PUBLIC_SITE_URL}/polls/${pollId}/results`
+        pollLink,
+        deadline: pollData.deadline || null,
+        meetingLink: pollData.meetingLink || null,
+        duration: pollData.duration || null,
+        timezone: pollData.timezone || 'UTC'
       }),
     });
+
+    // ✅ Send vote update confirmation email to participant
+    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/vote-update-confirmation-invitee`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        participantEmail: participantEmail?.trim().toLowerCase(),
+        participantName,
+        selectedTimes,
+        organizerName,
+        pollLink,
+        deadline: pollData.deadline || null,
+        meetingLink: pollData.meetingLink || null,
+        timezone: pollData.timezone || 'UTC',
+      }),
+    });
+
+    console.log(`✅ Vote submitted & emails sent for ${participantEmail}`);
 
     return new NextResponse('Vote submitted.', { status: 200 });
 
   } catch (error) {
-    console.error('Error submitting vote:', error);
+    console.error('❌ Error submitting vote:', error);
     return new NextResponse('Internal server error.', { status: 500 });
   }
 }

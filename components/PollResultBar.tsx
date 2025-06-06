@@ -15,15 +15,19 @@ export default function PollResultBar({
 }) {
   return (
     <div className="text-left space-y-2">
-      <p className={`text-md font-semibold ${isMyVote ? 'text-green-600' : 'text-gray-800'}`}>
-        {slotLabel}
+      {/* Top line with label and badge */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <p className={`text-md font-semibold ${isMyVote ? 'text-green-600' : 'text-gray-800'}`}>
+          {slotLabel}
+        </p>
         {isMyVote && (
-          <span className="ml-2 text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded-full">
-            You voted
+          <span className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+            You
           </span>
         )}
-      </p>
+      </div>
 
+      {/* Progress bar */}
       <div className="w-full h-6 bg-gray-200 rounded-full relative overflow-hidden shadow-inner">
         <motion.div
           initial={{ width: 0 }}
@@ -36,7 +40,10 @@ export default function PollResultBar({
         </span>
       </div>
 
-      <p className="text-xs text-gray-400">{votes} vote{votes !== 1 ? 's' : ''}</p>
+      {/* Vote count */}
+      <p className="text-xs text-gray-400">
+        {votes} vote{votes !== 1 ? 's' : ''}
+      </p>
     </div>
   );
 }
