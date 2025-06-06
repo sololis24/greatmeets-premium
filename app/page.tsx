@@ -287,7 +287,7 @@ useEffect(() => {
       setShakeCount((prev) => prev + 1); // this is essential
       return;
     }
-    
+        // this is essential
     
     // this is essential
   
