@@ -289,7 +289,6 @@ useEffect(() => {
     }
        
 
-  
     const token = nanoid();
     if (typeof window !== 'undefined' && invitees.length === 0) {
       localStorage.setItem('userToken', token);
@@ -663,3 +662,4 @@ if (userToken) {
 
 
 // trigger redeploy
+// // this is essential
