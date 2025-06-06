@@ -31,3 +31,6 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
+
+// Disables iframe protection globally
