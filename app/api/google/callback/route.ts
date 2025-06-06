@@ -50,7 +50,10 @@ export async function GET(req: NextRequest) {
       createdAt: new Date().toISOString(),
     });
 
-    return NextResponse.redirect(`http://localhost:3000/?google=connected&token=${userToken}`);
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+return NextResponse.redirect(`${baseUrl}/?google=connected&token=${userToken}`);
+
   } catch (err) {
     console.error('❌ Google callback error:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
