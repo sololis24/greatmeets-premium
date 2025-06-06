@@ -14,6 +14,20 @@ const nextConfig = {
     };
     return config;
   },
+
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOWALL', // ⚠️ Disables iframe protection globally
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
