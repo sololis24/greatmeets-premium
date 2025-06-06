@@ -585,6 +585,7 @@ if (userToken) {
   organizerErrors={organizerErrors}
   isPro={isPro === true}
   trialStartedAt={trialStartedAt}
+  shakeCount={shakeCount} 
 />
 {title && organizerFirstName && organizerLastName && organizerEmail && (
   <div className="relative overflow-visible">
