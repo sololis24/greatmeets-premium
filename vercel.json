@@ -1,8 +1,9 @@
 {
-    "functions": {
-      "api/send-reminders/route.ts": {
-        "runtime": "edge"
+    "crons": [
+      {
+        "path": "/api/send-reminders",
+        "schedule": "*/30 * * * *"
       }
-    }
+    ]
   }
   

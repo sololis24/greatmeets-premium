@@ -5,6 +5,8 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+
+
 const sendReminderEmail = async (
   inviteeEmail: string,
   inviteeName: string,
@@ -61,8 +63,12 @@ const sendReminderEmail = async (
     throw error;
   }
 };
+export async function POST(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 });
+  }
 
-export async function POST() {
   try {
     const allPollsSnap = await getDocs(collection(db, 'polls'));
     const now = Date.now();
@@ -71,37 +77,19 @@ export async function POST() {
       const data = docSnap.data();
       const pollId = docSnap.id;
 
-      if (!data.deadline) {
-        console.log(`⏭️ [${pollId}] Skipping — no deadline set`);
-        return false;
-      }
+      if (!data.deadline) return false;
 
       const deadline = new Date(data.deadline).getTime();
       const hoursToDeadline = (deadline - now) / (1000 * 60 * 60);
 
-      console.log(`⏱️ [${pollId}] Deadline in ${hoursToDeadline.toFixed(2)} hours`);
-      console.log(`📌 [${pollId}] reminderSentAt: ${data.reminderSentAt} | deadline: ${data.deadline}`);
-
       if (data.reminderSentAt) {
         const reminderSentTime = new Date(data.reminderSentAt).getTime();
         const hoursSinceReminder = (now - reminderSentTime) / (1000 * 60 * 60);
-
-        if (hoursSinceReminder < 48) {
-          console.log(`⏭️ [${pollId}] Skipping — reminder sent in last ${hoursSinceReminder.toFixed(2)} hours`);
-          return false;
-        }
+        if (hoursSinceReminder < 48) return false;
       }
 
-      if (hoursToDeadline > 4 && hoursToDeadline < 25) {
-        console.log(`✅ [${pollId}] Eligible for reminder`);
-        return true;
-      } else {
-        console.log(`⏭️ [${pollId}] Outside reminder window (4–25h)`);
-        return false;
-      }
+      return hoursToDeadline > 4 && hoursToDeadline < 25;
     });
-
-    console.log(`📋 Found ${pollsToRemind.length} poll(s) eligible for reminders`);
 
     for (const pollDoc of pollsToRemind) {
       const pollId = pollDoc.id;
@@ -111,14 +99,13 @@ export async function POST() {
 
       const votersByEmail = (votes as { email?: string }[])
         .map((v) => v.email?.toLowerCase().trim())
-        .filter((email): email is string => typeof email === 'string');
+        .filter((email): email is string => !!email);
 
-      const nonVoters = (invitees as { email?: string; firstName?: string; lastName?: string; token?: string }[]).filter((i) => {
-        const cleaned = i.email?.toLowerCase().trim();
-        return cleaned && !votersByEmail.includes(cleaned);
-      });
-
-      console.log(`👥 [${pollId}] ${nonVoters.length} non-voter(s)`);
+      const nonVoters = (invitees as { email?: string; firstName?: string; lastName?: string; token?: string }[])
+        .filter((i) => {
+          const email = i.email?.toLowerCase().trim();
+          return email && !votersByEmail.includes(email);
+        });
 
       const pollLink = `${process.env.NEXT_PUBLIC_SITE_URL}/polls/${pollId}`;
 
@@ -126,28 +113,13 @@ export async function POST() {
         if (invitee.email) {
           const name = `${invitee.firstName || ''} ${invitee.lastName || ''}`.trim();
           const token = invitee.token || '';
-
-          console.log(`📧 [${pollId}] Sending reminder to ${invitee.email}`);
-
-          await sendReminderEmail(
-            invitee.email,
-            name,
-            token,
-            pollLink,
-            organizerName || 'The Organizer',
-            title || 'your Great Meet',
-            deadline
-          );
-        } else {
-          console.log(`⚠️ [${pollId}] Skipped invitee with no email`);
+          await sendReminderEmail(invitee.email, name, token, pollLink, organizerName || 'The Organizer', title || 'your Great Meet', deadline);
         }
       }
 
       await updateDoc(pollRef, {
         reminderSentAt: new Date().toISOString(),
       });
-
-      console.log(`📝 [${pollId}] Updated reminderSentAt`);
     }
 
     return NextResponse.json({ message: 'Reminders sent if due' }, { status: 200 });
@@ -156,6 +128,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
 // trigger redeploy
 // trigger redeploy
 // trigger redeploy
