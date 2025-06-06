@@ -287,9 +287,8 @@ useEffect(() => {
       setShakeCount((prev) => prev + 1); // this is essential
       return;
     }
-        // this is essential
-    
-    // this is essential
+       
+
   
     const token = nanoid();
     if (typeof window !== 'undefined' && invitees.length === 0) {
