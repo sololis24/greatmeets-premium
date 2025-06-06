@@ -566,10 +566,7 @@ if (userToken) {
   animate={{ opacity: 1, y: 0 }}
   transition={{ duration: 0.5 }}
   className="relative overflow-visible z-0 bg-white px-8 py-12 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.06)] w-full flex flex-col gap-8 min-h-[470px] text-[14px] pb-40"
-
 >
-
-
 
             <form className="flex-1 space-y-6">
 
@@ -664,3 +661,6 @@ if (userToken) {
     </main>
   );
 }
+
+
+// trigger redeploy
