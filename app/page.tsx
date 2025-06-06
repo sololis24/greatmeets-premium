@@ -289,7 +289,7 @@ useEffect(() => {
     }
     
     
-    
+    // this is essential
   
     const token = nanoid();
     if (typeof window !== 'undefined' && invitees.length === 0) {
