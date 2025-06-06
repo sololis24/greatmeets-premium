@@ -274,7 +274,7 @@ useEffect(() => {
     if (!trimmedEmail) {
       errors.email = 'Email is required';
     } else if (!isEmailValid || blacklistedDomains.includes(domain)) {
-      errors.email = 'Invalid email address';
+      errors.email = 'Is that email valid?';
     }
   
     if (!newInviteeTimezone) {
