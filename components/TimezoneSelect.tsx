@@ -18,7 +18,6 @@ type Props = {
   onChange: (value: string) => void;
 };
 
-// Grouped timezones list (same as before)
 const timezonesGrouped: GroupedOption[] = [
   {
     label: 'North America',
@@ -96,8 +95,8 @@ const timezonesGrouped: GroupedOption[] = [
   {
     label: 'Oceania',
     options: [
+      { label: 'Auckland (NZST)', value: 'Pacific/Auckland' }, // Move Auckland first
       { label: 'Sydney (AEST)', value: 'Australia/Sydney' },
-      { label: 'Auckland (NZST)', value: 'Pacific/Auckland' },
     ],
   },
 ];
@@ -121,79 +120,79 @@ export default function TimezoneSelect({ value, onChange }: Props) {
     timezonesGrouped.flatMap(group => group.options).find(opt => opt.value === value) || null;
 
   return (
-   
     <Select
-    value={selectedOption}
-    onChange={(option) => onChange(option?.value ?? '')}
-    options={timezonesGrouped}
-    isClearable
-    placeholder="Select their timezone"
-    className="text-black"
-    classNamePrefix="react-select"
-    menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
-    menuPlacement="top"
-    styles={{
-      control: (base, state) => ({
-        ...base,
-        fontSize: '16px',
-        borderRadius: '0.5rem',
-        borderColor: state.isFocused ? '#14b8a6' : '#d1d5db', // teal-500 or gray-300
-        boxShadow: state.isFocused ? '0 0 0 2px #5eead4' : 'none', // teal-300 ring
-        padding: '6px 10px',
-        minHeight: '48px',
-        transition: 'all 0.2s ease',
-        backgroundColor: '#ffffff',
-        '&:hover': {
-          borderColor: '#14b8a6',
-        },
-      }),
-      singleValue: (base) => ({
-        ...base,
-        fontSize: '16px',
-        fontStyle: 'italic',
-        color: '#111827', // gray-900
-      }),
-      placeholder: (base) => ({
-        ...base,
-        fontSize: '16px',
-        fontStyle: 'italic',
-        color: '#9ca3af', // gray-400
-      }),
-      option: (base, { isFocused, isSelected }) => ({
-        ...base,
-        fontSize: '16px',
-        backgroundColor: isSelected
-          ? '#14b8a6' // teal-500
-          : isFocused
-          ? '#f0fdfa' // teal-50
-          : '#fff',
-        color: isSelected ? '#ffffff' : '#111827',
-        padding: '12px 16px',
-        cursor: 'pointer',
-      }),
-      menu: (base) => ({
-        ...base,
-        borderRadius: '0.5rem',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-        overflow: 'hidden',
-        zIndex: 20,
-      }),
-      menuPortal: (base) => ({
-        ...base,
-        zIndex: 9999,
-      }),
-      clearIndicator: (base) => ({
-        ...base,
-        padding: '6px',
-        color: '#9ca3af',
-        '&:hover': {
+      value={selectedOption}
+      onChange={(option) => onChange(option?.value ?? '')}
+      options={timezonesGrouped}
+      isClearable
+      placeholder="Select their timezone"
+      className="text-black"
+      classNamePrefix="react-select"
+      menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
+      menuPosition="fixed"
+      menuPlacement="auto"
+      styles={{
+        control: (base, state) => ({
+          ...base,
+          fontSize: '16px',
+          borderRadius: '0.5rem',
+          borderColor: state.isFocused ? '#14b8a6' : '#d1d5db',
+          boxShadow: state.isFocused ? '0 0 0 2px #5eead4' : 'none',
+          padding: '6px 10px',
+          minHeight: '48px',
+          transition: 'all 0.2s ease',
+          backgroundColor: '#ffffff',
+          '&:hover': {
+            borderColor: '#14b8a6',
+          },
+        }),
+        singleValue: (base) => ({
+          ...base,
+          fontSize: '16px',
+          fontStyle: 'italic',
           color: '#111827',
-        },
-      }),
-    }}
-  />
-  
-
-  
+        }),
+        placeholder: (base) => ({
+          ...base,
+          fontSize: '16px',
+          fontStyle: 'italic',
+          color: '#9ca3af',
+        }),
+        option: (base, { isFocused, isSelected }) => ({
+          ...base,
+          fontSize: '16px',
+          backgroundColor: isSelected
+            ? '#14b8a6'
+            : isFocused
+            ? '#f0fdfa'
+            : '#fff',
+          color: isSelected ? '#ffffff' : '#111827',
+          padding: '12px 16px',
+          cursor: 'pointer',
+        }),
+        menu: (base) => ({
+          ...base,
+          borderRadius: '0.5rem',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          overflowY: 'auto',
+          maxHeight: '350px', // ⬆️ Increased to fit both Auckland + Sydney
+          zIndex: 9999,
+          backgroundColor: '#fff',
+        }),
+        
+        menuPortal: (base) => ({
+          ...base,
+          zIndex: 9999,
+        }),
+        clearIndicator: (base) => ({
+          ...base,
+          padding: '6px',
+          color: '#9ca3af',
+          '&:hover': {
+            color: '#111827',
+          },
+        }),
+      }}
+    />
   );
 }
