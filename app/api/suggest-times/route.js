@@ -38,8 +38,10 @@ const timezoneMap = {
   "Asia/Tokyo": "Tokyo",
   "Asia/Seoul": "Seoul",
   // Oceania
+ "Pacific/Auckland": "Wellington",
   "Australia/Sydney": "Sydney",
-  "Pacific/Auckland": "Wellington",
+  "Australia/Sydney": "Melbourne",
+  
 };
 
 export async function POST(req) {
