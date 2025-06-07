@@ -132,19 +132,27 @@ export default function InviteeForm({
         </p>
       )}
 
-
       <TimezoneSelect value={newInviteeTimezone} onChange={setNewInviteeTimezone} />
 
       <motion.button
-        key={`btn-${shakeCount}`}
-        type="button"
-        onClick={handleAddInvitee}
-        animate={hasRendered && shakeCount > 0 ? { x: [0, -10, 10, -10, 0] } : {}}
-        transition={{ duration: 0.4 }}
-        className="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white text-lg font-semibold py-4 rounded-full transition mt-4"
-      >
-        Add Invitee
-      </motion.button>
+  key={`btn-${shakeCount}`}
+  type="button"
+  onClick={() => {
+    const isValid = isValidEmail(newInviteeEmail);
+    handleAddInvitee();
+
+    // Reset blur state and clear errors after successful addition
+    if (isValidEmail(newInviteeEmail)) {
+      setHasBlurred(false);
+    }    
+  }}
+  animate={hasRendered && shakeCount > 0 ? { x: [0, -10, 10, -10, 0] } : {}}
+  transition={{ duration: 0.4 }}
+  className="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white text-lg font-semibold py-4 rounded-full transition mt-4"
+>
+  Add Invitee
+</motion.button>
+
 
       {invitees.length > 0 && (
         <div className="bg-gray-50 p-4 rounded-lg shadow-inner space-y-4 mt-6">
@@ -178,3 +186,6 @@ export default function InviteeForm({
     </motion.div>
   );
 }
+
+
+// auto-dismiss
