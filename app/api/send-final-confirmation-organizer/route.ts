@@ -4,9 +4,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 if (!process.env.RESEND_API_KEY) {
   throw new Error('❌ RESEND_API_KEY is not defined');
 }
-
 const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: Request) {
   console.log('📬 Received POST to /api/send-final-confirmation-organizer');
 
@@ -47,7 +45,6 @@ export async function POST(req: Request) {
     const safeTimezone = recipientTimezone || 'UTC';
     const formattedName = name?.trim() || 'there';
     const formattedOrganizer = organizerName?.trim() || 'the organizer';
-
 
     const sendEmail = async (
   startDate: Date,

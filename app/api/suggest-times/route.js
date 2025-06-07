@@ -41,7 +41,6 @@ const timezoneMap = {
  "Pacific/Auckland": "Wellington",
   "Australia/Sydney": "Sydney",
   "Australia/Sydney": "Melbourne",
-  
 };
 
 export async function POST(req) {

@@ -4,7 +4,8 @@ if (!process.env.RESEND_API_KEY) {
   throw new Error('❌ RESEND_API_KEY is not set in the environment variables.');
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { resend } from '@/lib/emailClient';
+
 
 export const POST = async (req: Request): Promise<Response> => {
   console.log("📬 HIT /api/invitees-missed-deadline-organizer");

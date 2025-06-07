@@ -99,18 +99,20 @@ export async function POST(req: Request) {
             : ''
         }
 
-        <a href="${pollLink}" 
-           style="background: linear-gradient(90deg, #10b981, #3b82f6); 
-                  color: white; 
-                  text-decoration: none; 
-                  padding: 12px 24px; 
-                  font-size: 16px; 
-                  border-radius: 8px; 
-                  display: inline-block; 
-                  font-weight: 600;
-                  margin-top: 24px;">
-          View Poll
-        </a>
+     <a href="${pollLink}" 
+   style="background-color: #0047AB; 
+          background-image: linear-gradient(90deg, #10b981, #3b82f6); 
+          color: white; 
+          text-decoration: none; 
+          padding: 12px 24px; 
+          font-size: 16px; 
+          border-radius: 8px; 
+          display: inline-block; 
+          font-weight: 600;
+          margin-top: 24px;">
+  View Poll
+</a>
+
 
         <p style="font-size: 14px; color: #666666; margin-top: 30px;">
           Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;">

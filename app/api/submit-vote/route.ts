@@ -41,53 +41,67 @@ export async function POST(req: Request) {
       };
     });
 
-    // ✅ Send vote notification to organizer
-    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-vote-notification`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        organizerEmail,
-        organizerName,
-        participantName,
-        pollLink,
-        deadline: pollData.deadline || null,
-      }),
-    });
+    // ✅ Notify organizer
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-vote-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizerEmail,
+          organizerName,
+          participantName,
+          pollLink,
+          deadline: pollData.deadline || null,
+        }),
+      });
+    } catch (err) {
+      console.error('❌ Failed to notify organizer:', err);
+    }
 
     // ✅ Send thank-you email to participant
-    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-thank-you`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        participantEmail: participantEmail?.trim().toLowerCase(),
-        participantName,
-        selectedTimes,
-        organizerName,
-        pollLink,
-        deadline: pollData.deadline || null,
-        meetingLink: pollData.meetingLink || null,
-        duration: pollData.duration || null,
-        timezone: pollData.timezone || 'UTC'
-      }),
-    });
+    try {
+      console.log('📨 Sending thank-you email to:', participantEmail, selectedTimes);
+
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-thank-you`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantEmail: participantEmail?.trim().toLowerCase(),
+          participantName,
+          selectedTimes,
+          organizerName,
+          pollLink,
+          deadline: pollData.deadline || null,
+          meetingLink: pollData.meetingLink || null,
+          duration: pollData.duration || null,
+          timezone: pollData.timezone || 'UTC'
+        }),
+      });
+    } catch (err) {
+      console.error('❌ Failed to send thank-you email:', err);
+    }
 
     // ✅ Send vote update confirmation email to participant
-    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/vote-update-confirmation-invitee`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        participantEmail: participantEmail?.trim().toLowerCase(),
-        participantName,
-        selectedTimes,
-        organizerName,
-        pollLink,
-        deadline: pollData.deadline || null,
-        meetingLink: pollData.meetingLink || null,
-        timezone: pollData.timezone || 'UTC',
-      }),
-    });
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/vote-update-confirmation-invitee`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantEmail: participantEmail?.trim().toLowerCase(),
+          participantName,
+          selectedTimes,
+          organizerName,
+          pollLink,
+          deadline: pollData.deadline || null,
+          meetingLink: pollData.meetingLink || null,
+          timezone: pollData.timezone || 'UTC',
+        }),
+      });
+    } catch (err) {
+      console.error('❌ Failed to send vote update confirmation:', err);
+    }
 
-    console.log(`✅ Vote submitted & emails sent for ${participantEmail}`);
+    console.log(`✅ Vote submitted & all emails triggered for ${participantEmail}`);
 
     return new NextResponse('Vote submitted.', { status: 200 });
 

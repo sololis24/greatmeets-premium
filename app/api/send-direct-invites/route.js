@@ -4,17 +4,6 @@ import { formatInTimeZone } from 'date-fns-tz';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// 🔧 Format as "9:00 AM – 9:30 AM (TimeZone)"
-// Format as "09:00 – 09:30 (TimeZone)" in 24-hour format
-const formatTimeRange = (iso, timeZone, durationMin) => {
-  const start = new Date(iso);
-  const end = new Date(start.getTime() + durationMin * 60 * 1000);
-  const startStr = formatInTimeZone(start, timeZone, 'HH:mm');
-  const endStr = formatInTimeZone(end, timeZone, 'HH:mm');
-  return `${startStr} – ${endStr} (${timeZone.replace(/_/g, ' ')})`;
-};
-
-
 // ✅ Invitee Email Template
 const directInviteTemplate = (senderName, meetingTitle, inviteeName, inviteeLocalTimes) => `
   <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
@@ -35,9 +24,9 @@ const directInviteTemplate = (senderName, meetingTitle, inviteeName, inviteeLoca
 `;
 
 // ✅ Organizer Email Template
-const organizerConfirmationEmail = (organizerName, meetingTitle, inviteeListHTML, selectedTimes, organizerTimezone, durationMin) => {
+const organizerConfirmationEmail = (organizerName, meetingTitle, inviteeListHTML, selectedTimes, organizerTimezone) => {
   const formattedTimes = selectedTimes.map((iso) =>
-    formatTimeRange(iso, organizerTimezone || 'UTC', durationMin)
+    formatInTimeZone(new Date(iso), organizerTimezone || 'UTC', "EEE dd MMM, HH:mm zzz")
   );
 
   return `
@@ -70,7 +59,6 @@ export async function POST(req) {
       meetingTitle = '',
       invitees = [],
       selectedTimes = [],
-      duration = 30 // 👈 default to 30 minutes
     } = body;
 
     if (!organizerEmail || invitees.length === 0 || selectedTimes.length === 0) {
@@ -81,7 +69,7 @@ export async function POST(req) {
     await Promise.all(
       invitees.map(async (invitee) => {
         const inviteeLocalTimes = selectedTimes.map((iso) =>
-          formatTimeRange(iso, invitee.timezone || 'UTC', duration)
+          formatInTimeZone(new Date(iso), invitee.timezone || 'UTC', "EEE dd MMM, HH:mm zzz")
         );
 
         await resend.emails.send({
@@ -97,7 +85,7 @@ export async function POST(req) {
     const inviteeListHTML = invitees
       .map((invitee) => {
         const times = selectedTimes.map((iso) =>
-          formatTimeRange(iso, invitee.timezone || 'UTC', duration)
+          formatInTimeZone(new Date(iso), invitee.timezone || 'UTC', "EEE dd MMM, HH:mm zzz")
         );
 
         return `<strong>${invitee.name || 'Unnamed'}</strong> (${invitee.email}) — ${invitee.timezone || 'no timezone provided'}<br/><em>${times.join('<br/>')}</em>`;
@@ -108,7 +96,7 @@ export async function POST(req) {
       from: 'GreatMeets <noreply@greatmeets.ai>',
       to: organizerEmail,
       subject: `Your Great Meet has been sent successfully`,
-      html: organizerConfirmationEmail(organizerName, meetingTitle, inviteeListHTML, selectedTimes, organizerTimezone, duration),
+      html: organizerConfirmationEmail(organizerName, meetingTitle, inviteeListHTML, selectedTimes, organizerTimezone),
     });
 
     return NextResponse.json({ status: 'success' });

@@ -1,99 +1,120 @@
 import { Resend } from 'resend';
-import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz';
-import { parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { parseISO, isValid } from 'date-fns';
+
 
 if (!process.env.RESEND_API_KEY) {
-  throw new Error('❌ RESEND_API_KEY is not set in the environment');
+  throw new Error('❌ RESEND_API_KEY is not defined');
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
+  console.log('📬 Received POST to /api/send-final-confirmation-invitee');
+
   try {
     const {
       to,
-      name,
-      time,
       slots,
-      organizerName,
+      time,
+      name,
       link,
       meetingLink,
-      inviteeTimezone,
+      recipientTimezone,
       meetingTitle,
       multiSlotConfirmation,
+      organizerName,
       duration,
+      slotIndex,
+      totalSlots,
     } = await req.json();
 
-    console.log('📨 Incoming request to /api/send-final-confirmation-invitee');
-    console.log('📧 To:', to);
 
-    const safeTimezone = inviteeTimezone || 'UTC';
+    if (!to || !link) {
+      console.error('❌ Missing required fields');
+      return new Response('Missing fields', { status: 400 });
+    }
+
+    const isValidTimezone = typeof recipientTimezone === 'string' && recipientTimezone.includes('/');
+    const safeTimezone = isValidTimezone ? recipientTimezone : 'UTC';
+
+    console.log('📨 Invitee email payload received:');
+    console.log('   → to:', to);
+    console.log('   → time:', time);
+    console.log('   → recipientTimezone:', recipientTimezone);
+    console.log('   → isValidTimezone:', isValidTimezone);
+    console.log('   → using safeTimezone:', safeTimezone);
+    
     const formattedName = name?.trim() || 'there';
-    const formattedOrganizer = organizerName?.trim() || 'your organizer';
+    const formattedOrganizer = organizerName?.trim() || 'the organizer';
+    const formatTimeRange = (iso: string, timeZone: string, durationMin: number) => {
+      const start = parseISO(iso);
+      if (!isValid(start)) {
+        console.warn('❌ Invalid time value passed to formatTimeRange:', iso);
+        return 'Invalid time';
+      }
+    
+      const end = new Date(start.getTime() + durationMin * 60 * 1000);
+      const dateStr = formatInTimeZone(start, timeZone, "EEEE, d MMM yyyy");
+      const startStr = formatInTimeZone(start, timeZone, "HH:mm");
+      const endStr = formatInTimeZone(end, timeZone, "HH:mm");
+      return `${dateStr}<br />${startStr}–${endStr} (${timeZone.replace(/_/g, ' ')})`;
+    };
 
     const sendEmail = async (
-      start: string,
-      dur: number,
-      index?: number,
-      total?: number
+      isoTime: string,
+      meetingDuration: number,
+      index: number,
+      total: number
     ) => {
-      let startDate;
-      try {
-        const localDate = parseISO(start);
-        startDate = parseISO(start);
-      } catch {
-        startDate = new Date(start);
-      }
+      const start = new Date(isoTime);
+      const end = new Date(start.getTime() + meetingDuration * 60000);
 
-      const endDate = new Date(startDate.getTime() + dur * 60000);
+      const formattedTimeRange = formatTimeRange(isoTime, safeTimezone, meetingDuration);
 
-      const startUTC = startDate.toISOString().replace(/[-:]|\.\d{3}/g, '');
-      const endUTC = endDate.toISOString().replace(/[-:]|\.\d{3}/g, '');
+      const gcalStart = formatInTimeZone(start, 'UTC', "yyyyMMdd'T'HHmmss'Z'");
+      const gcalEnd = formatInTimeZone(end, 'UTC', "yyyyMMdd'T'HHmmss'Z'");
+      const googleCalURL = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(meetingTitle || 'GreatMeet')}&dates=${gcalStart}/${gcalEnd}&details=${encodeURIComponent('Scheduled via GreatMeets')}&location=${encodeURIComponent(meetingLink || '')}`;
 
-      const title = encodeURIComponent(meetingTitle || 'GreatMeet');
-      const description = encodeURIComponent('Scheduled via GreatMeets');
-      const googleCalURL = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startUTC}/${endUTC}&details=${description}&location=${encodeURIComponent(
-        meetingLink || ''
-      )}`;
+      const subject =
+        multiSlotConfirmation && total > 1
+          ? `📅 Your GreatMeet Times are Confirmed (${index}/${total})`
+          : '📅 Your GreatMeet Time is Confirmed';
 
-      const icsContent = `
-BEGIN:VCALENDAR
-VERSION:2.0
-BEGIN:VEVENT
-SUMMARY:${meetingTitle || 'GreatMeet'}
-DESCRIPTION:Scheduled via GreatMeets
-DTSTART:${startUTC}
-DTEND:${endUTC}
-LOCATION:${meetingLink || 'GreatMeets'}
-STATUS:CONFIRMED
-ORGANIZER;CN=${formattedOrganizer}:mailto:noreply@greatmeets.ai
-END:VEVENT
-END:VCALENDAR`.trim();
-
-      const formattedDate = formatInTimeZone(startDate, safeTimezone, 'EEEE, d MMM yyyy');
-      const startTimeStr = formatInTimeZone(startDate, safeTimezone, 'HH:mm');
-      const endTimeStr = formatInTimeZone(endDate, safeTimezone, 'HH:mm');
+      const icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//GreatMeets.ai//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        `SUMMARY:${meetingTitle || 'GreatMeet'}`,
+        'DESCRIPTION:Scheduled via GreatMeets',
+        `DTSTART:${gcalStart}`,
+        `DTEND:${gcalEnd}`,
+        `LOCATION:${meetingLink || 'GreatMeets'}`,
+        'STATUS:CONFIRMED',
+        `ORGANIZER;CN=${formattedOrganizer}:mailto:noreply@greatmeets.ai`,
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
 
       const html = `
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
   <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto;">
-    <h2 style="font-size: 22px; color: #10b981;">Your Time is Confirmed</h2>
+   <h2 style="font-size: 22px; font-weight: bold; color: #10b981;">Final Time Confirmed</h2>
     <p style="font-size: 16px; color: #333;">
       Hey ${formattedName} 👋<br />
       ${
         multiSlotConfirmation
-          ? `You have <strong>a confirmed time</strong> for your Great Meet with <strong>${formattedOrganizer}</strong>.`
-          : `You're all set! The time has been finalized for your Great Meet with <strong>${formattedOrganizer}</strong>:`
+          ? `You're all set! <strong>Multiple confirmed times</strong> have been finalized for your Great Meet.`
+          : `You're all set! The time for your Great Meet with <strong>${formattedOrganizer}</strong> has been finalized.`
       }
     </p>
     <p style="font-size: 20px; margin: 20px 0 10px; font-weight: bold; color: #111;">
-      ${formattedDate}<br />
-      ${startTimeStr}–${endTimeStr} (${safeTimezone.replace(/_/g, ' ')})
+      ${formattedTimeRange}
     </p>
-
-    <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;" />
-
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 32px auto; text-align: center;">
+    <table role="presentation" style="margin: 0 auto 32px auto; text-align: center;">
       <tr>
         ${
           meetingLink
@@ -102,8 +123,7 @@ END:VCALENDAR`.trim();
              style="display: inline-block; background: #3b82f6; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">
             🔗 Join Meeting
           </a>
-        </td>`
-            : ''
+        </td>` : ''
         }
         <td style="padding: 6px;">
           <a href="${googleCalURL}" target="_blank"
@@ -113,32 +133,17 @@ END:VCALENDAR`.trim();
         </td>
       </tr>
     </table>
-
-    <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;" />
-
     <a href="${link}" 
-       style="background: linear-gradient(90deg, #f59e0b, #6366f1); 
-              color: white; 
-              text-decoration: none; 
-              padding: 12px 24px; 
-              font-size: 16px; 
-              border-radius: 8px; 
-              display: inline-block; 
-              font-weight: 600;">
+       style="background: linear-gradient(90deg, #f59e0b, #6366f1); color: white; text-decoration: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; display: inline-block; font-weight: 600;">
       View Final Poll
     </a>
-
     <p style="font-size: 14px; color: #666666; margin-top: 30px;">
       Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.
     </p>
   </div>
 </div>`;
 
-      const subject = multiSlotConfirmation && typeof index === 'number' && typeof total === 'number'
-        ? `📅 Your GreatMeet Time is Confirmed (${index + 1}/${total})`
-        : multiSlotConfirmation
-        ? '📅 You have multiple GreatMeet times confirmed'
-        : '🆕 Your Great Meet Time is confirmed';
+      const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
 
       await resend.emails.send({
         from: 'Great Meets <noreply@greatmeets.ai>',
@@ -151,24 +156,41 @@ END:VCALENDAR`.trim();
             content: Buffer.from(icsContent, 'utf-8'),
           },
         ],
+        headers: {
+          'Message-ID': `<${uniqueId}@greatmeets.ai>`,
+          'X-Entity-Ref-ID': uniqueId,
+        },
       });
+
+      console.log(`📤 Invitee email sent: ${to} for ${isoTime}`);
     };
 
-    if (multiSlotConfirmation && Array.isArray(slots)) {
-      for (let i = 0; i < slots.length; i++) {
-        const s = slots[i];
-        if (!s.time) continue;
-        await sendEmail(s.time, s.duration || 30, i, slots.length);
+    // MULTI-SLOT
+    if (Array.isArray(slots) && slots.length > 0 && multiSlotConfirmation) {
+      console.log('📩 Sending multiple invitee emails...');
+      const validSlots = slots.filter(slot => slot.time && !isNaN(Date.parse(slot.time)));
+      const total = validSlots.length;
+
+      for (let i = 0; i < total; i++) {
+        const slot = validSlots[i];
+        await sendEmail(slot.time, slot.duration || 30, i + 1, total);
       }
-    } else {
-      await sendEmail(time, duration || 30);
     }
 
-    return new Response('Updated final confirmation email(s) sent.', { status: 200 });
+    // SINGLE-SLOT
+    else if (time && !Array.isArray(slots)) {
+      if (isNaN(Date.parse(time))) return new Response('Invalid time format', { status: 400 });
+
+      const index = slotIndex || 1;
+      const total = totalSlots || (multiSlotConfirmation ? 2 : 1);
+
+      await sendEmail(time, duration || 30, index, total);
+    }
+
+    return new Response('Invitee confirmation email(s) sent.', { status: 200 });
+
   } catch (error: any) {
-    console.error('❌ Error sending updated final confirmation invitee email:', error.message || error);
-    return new Response('Failed to send updated final confirmation email', {
-      status: 500,
-    });
+    console.error('❌ Error sending invitee confirmation email:', error.message || error);
+    return new Response('Failed to send invitee confirmation email', { status: 500 });
   }
 }

@@ -3,14 +3,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { formatInTimeZone } from 'date-fns-tz';
 
-import type { TimeSlot } from '@/types/index';
+
+
+import type { TimeSlot } from '@/types'; // Or wherever your TimeSlot type is
 
 interface PollTimeSlotListProps {
-  slots: TimeSlot[] | undefined;
+  slots: TimeSlot[]; // ✅ NOT string[]
   selected: string[];
   onSelect: (slot: string) => void;
   timezone: string;
 }
+
 
 export default function PollTimeSlotList({
   slots = [],

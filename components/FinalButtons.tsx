@@ -22,7 +22,7 @@ type FinalButtonsProps = {
   setToastType: (val: 'success' | 'error') => void;
   meetingLink: string;
   setMeetingLink: (val: string) => void;
-  scrollToMeetingLinkRef: RefObject<HTMLDivElement>
+  scrollToMeetingLinkRef: RefObject<HTMLDivElement>;
   setJustGeneratedMeetingLink: (val: boolean) => void;
   duration: number;
   setDuration: (val: number) => void;

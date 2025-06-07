@@ -9,7 +9,7 @@ if (!process.env.RESEND_API_KEY) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
-  console.log('📬 Received POST to /api/send-final-confirmation-invitee');
+
 
   try {
     const {
@@ -71,8 +71,8 @@ export async function POST(req: Request) {
 
       const subject =
         multiSlotConfirmation && total > 1
-          ? `📅 Your GreatMeet Times are Confirmed (${index}/${total})`
-          : '📅 Your GreatMeet Time is Confirmed';
+          ? `📅 Your Great Meet Times are Confirmed (${index}/${total})`
+          : '📅 Your Great Meet Time is Confirmed';
 
       const icsContent = [
         'BEGIN:VCALENDAR',

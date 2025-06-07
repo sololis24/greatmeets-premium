@@ -2,7 +2,8 @@ console.log("🕐 Checking for polls expiring tomorrow...");
 
 
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env.production.local' });
+
 
 import { Resend } from 'resend';
 import { db } from '../firebase/firebaseConfig.js';
