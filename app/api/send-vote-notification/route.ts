@@ -46,9 +46,19 @@ export async function POST(req: Request) {
           ? `<p style="font-size:14px; color:#666; margin-top:10px; margin-bottom: 20px;">⏳ Poll closes by <strong>${formattedDeadline}</strong></p>`
           : ''
         }
-        <a href="${pollLink}" style="background: linear-gradient(90deg, #34d399, #4f46e5); color: white; text-decoration: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; display: inline-block; margin-top: 24px;">
-          View Live Poll
-        </a>
+       <a href="${pollLink}" 
+   style="background-color: #0047AB; 
+          background-image: linear-gradient(90deg, #34d399, #4f46e5); 
+          color: white; 
+          text-decoration: none; 
+          padding: 12px 24px; 
+          font-size: 16px; 
+          border-radius: 8px; 
+          display: inline-block; 
+          margin-top: 24px;">
+  View Live Poll
+</a>
+
 
         <p style="font-size: 14px; color: #666666; margin-top: 30px;">
           Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.

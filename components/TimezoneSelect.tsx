@@ -95,8 +95,11 @@ const timezonesGrouped: GroupedOption[] = [
   {
     label: 'Oceania',
     options: [
-      { label: 'Auckland (NZST)', value: 'Pacific/Auckland' }, // Move Auckland first
+      { label: 'Auckland (NZST)', value: 'Pacific/Auckland' },
       { label: 'Sydney (AEST)', value: 'Australia/Sydney' },
+      { label: 'Melbourne (AEST)', value: 'Australia/Melbourne' },
+
+     
     ],
   },
 ];
@@ -129,8 +132,8 @@ export default function TimezoneSelect({ value, onChange }: Props) {
       className="text-black"
       classNamePrefix="react-select"
       menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
-      menuPosition="fixed"
-      menuPlacement="auto"
+      menuPosition="absolute"
+      menuPlacement="top"
       styles={{
         control: (base, state) => ({
           ...base,
@@ -171,15 +174,15 @@ export default function TimezoneSelect({ value, onChange }: Props) {
           cursor: 'pointer',
         }),
         menu: (base) => ({
-          ...base,
-          borderRadius: '0.5rem',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-          overflowY: 'auto',
-          maxHeight: '350px', // ⬆️ Increased to fit both Auckland + Sydney
-          zIndex: 9999,
-          backgroundColor: '#fff',
-        }),
-        
+  ...base,
+  borderRadius: '0.5rem',
+  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+  overflowY: 'auto',
+  maxHeight: '280px',
+  zIndex: 9999,
+  backgroundColor: '#fff',
+}),
+
         menuPortal: (base) => ({
           ...base,
           zIndex: 9999,
@@ -196,6 +199,3 @@ export default function TimezoneSelect({ value, onChange }: Props) {
     />
   );
 }
-
-
-// ⬆️ Lis wooo

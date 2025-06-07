@@ -19,9 +19,19 @@ async function sendCantAttendEmail(
         <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <h1 style="font-size: 24px; color: #4f46e5; font-weight: bold;">Hey, ${organizerName} 👋</h1>
           <p style="font-size: 18px; color: #333;">Unfortunately, ${participantName} is unable to attend your Great Meet.</p>
-          <a href="${pollLink}" style="background: linear-gradient(90deg, #34d399, #4f46e5); color: white; text-decoration: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; display: inline-block; margin-top: 20px;">
-            View your live poll
-          </a>
+         <a href="${pollLink}" 
+   style="background-color: #0047AB; 
+          background-image: linear-gradient(90deg, #34d399, #4f46e5); 
+          color: white; 
+          text-decoration: none; 
+          padding: 15px 30px; 
+          font-size: 16px; 
+          border-radius: 8px; 
+          display: inline-block; 
+          margin-top: 20px;">
+  View your live poll
+</a>
+
           <p style="font-size: 14px; color: #666666; margin-top: 30px;">
             Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.
           </p>
@@ -122,19 +132,21 @@ export async function POST(req: Request): Promise<Response> {
               <p style="font-size: 16px; color: #444; margin-top: 16px;">
                 If this was a mistake or your plans change, you can revisit the poll below:
               </p>
-              <a href="${pollLink}" style="
-                background: linear-gradient(90deg, #10b981, #3b82f6);
-                color: white;
-                text-decoration: none;
-                padding: 12px 24px;
-                font-size: 16px;
-                font-weight: 600;
-                border-radius: 8px;
-                display: inline-block;
-                margin-top: 24px;
-              ">
-                Return to Poll
-              </a>
+             <a href="${pollLink}" style="
+  background-color: #0047AB;
+  background-image: linear-gradient(90deg, #10b981, #3b82f6);
+  color: white;
+  text-decoration: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  display: inline-block;
+  margin-top: 24px;
+">
+  Return to Poll
+</a>
+
               <p style="font-size: 13px; color: #999; margin-top: 24px;">We hope to see you at the next one 💚</p>
               <p style="font-size: 14px; color: #666666; margin-top: 30px;">
                 Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.

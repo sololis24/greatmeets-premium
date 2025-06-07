@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       createdAt: new Date().toISOString(),
     });
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
 return NextResponse.redirect(`${baseUrl}/?google=connected&token=${userToken}`);
 

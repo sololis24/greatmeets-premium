@@ -132,7 +132,7 @@ export async function POST(req: Request) {
         ? formatInTimeZone(participantParsedDeadline, timezone, "EEEE, d MMM yyyy, HH:mm") + ` (${timezone.replace(/_/g, ' ')})`
         : null;
 
-      const html = `
+        const html = `
         <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
           <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <h1 style="font-size: 24px; color: #4f46e5; font-weight: bold;">You're Invited! 🎉</h1>
@@ -141,13 +141,17 @@ export async function POST(req: Request) {
             <p style="font-size: 16px; color: #333;">Suggested Times:</p>
             <p style="font-size: 15px; color: #111;">${participantFormattedTimes.join('<br/>')}</p>
             ${participantFormattedDeadline ? `<p style="font-size: 14px; color: #999; margin-top: 12px;">Vote by the deadline (converted to your local time): <strong>${participantFormattedDeadline}</strong></p>` : ''}
-            <a href="${inviteLink}" style="background: linear-gradient(90deg, #34d399, #4f46e5); color: white; text-decoration: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; display: inline-block; margin-top: 20px;">Vote Now</a>
+            <a href="${inviteLink}" 
+               style="background-color: #0047AB; background-image: linear-gradient(90deg, #34d399, #4f46e5); color: white; text-decoration: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; display: inline-block; margin-top: 20px;">
+              Vote Now
+            </a>
             <p style="font-size: 14px; color: #666666; margin-top: 30px;">
               Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.
             </p>
           </div>
         </div>
       `;
+      
 
       try {
         await safeSendEmail({
@@ -178,23 +182,29 @@ export async function POST(req: Request) {
     }
 
     const organizerHtml = `
-      <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
-        <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <h1 style="font-size: 24px; color: #10b981; font-weight: bold;">Your Great Meet is Live! 🎉</h1>
-          <p style="font-size: 18px; color: #333333;">Hi ${organizerName}, your invites have been sent.</p>
-          ${meetingTitle ? `<p style="font-size: 16px; color: #333;"><strong>Meeting:</strong> ${meetingTitle}</p>` : ''}
-          <p style="font-size: 16px; color: #333;">Selected Times:</p>
-          <p style="font-size: 15px; color: #111;">${formattedTimes.join('<br/>')}</p>
-          ${formattedDeadline ? `<p style="font-size: 14px; color: #999; margin-top: 12px;">Deadline: <strong>${formattedDeadline}</strong></p>` : ''}
-          <p style="font-size: 16px; color: #333; margin-top: 20px;">Invite Status:</p>
-          <p style="font-size: 14px; color: #111;">${statusListHtml}</p>
-          <a href="${pollLink}" style="background: linear-gradient(90deg, #10b981, #4f46e5); color: white; text-decoration: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; display: inline-block; margin-top: 20px;">View Live Poll</a>
-          <p style="font-size: 14px; color: #666666; margin-top: 30px;">
-            Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.
-          </p>
-        </div>
+    <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
+      <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h1 style="font-size: 24px; color: #10b981; font-weight: bold;">Your Great Meet is Live! 🎉</h1>
+        <p style="font-size: 18px; color: #333333;">Hi ${organizerName}, your invites have been sent.</p>
+        ${meetingTitle ? `<p style="font-size: 16px; color: #333;"><strong>Meeting:</strong> ${meetingTitle}</p>` : ''}
+        <p style="font-size: 16px; color: #333;">Selected Times:</p>
+        <p style="font-size: 15px; color: #111;">${formattedTimes.join('<br/>')}</p>
+        ${formattedDeadline ? `<p style="font-size: 14px; color: #999; margin-top: 12px;">Deadline: <strong>${formattedDeadline}</strong></p>` : ''}
+        <p style="font-size: 16px; color: #333; margin-top: 20px;">Invite Status:</p>
+        <p style="font-size: 14px; color: #111;">${statusListHtml}</p>
+        <a href="${pollLink}" 
+           style="background-color: #0047AB; background-image: linear-gradient(90deg, #10b981, #4f46e5); 
+                  color: white; text-decoration: none; padding: 15px 30px; font-size: 16px; 
+                  border-radius: 8px; display: inline-block; margin-top: 20px;">
+          View Live Poll
+        </a>
+        <p style="font-size: 14px; color: #666666; margin-top: 30px;">
+          Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.
+        </p>
       </div>
-    `;
+    </div>
+  `;
+  
 
     try {
       await safeSendEmail({
