@@ -140,7 +140,7 @@ export default function PollResultsPage() {
             return i.firstName || i.name || i.email || 'Unnamed';
           });
       
-          await fetch('/api/invitees-missed-deadline-organizer', {
+          await fetch(`${location.origin}/api/invitees-missed-deadline-organizer`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -202,7 +202,7 @@ if (
   }
 
   try {
-    const res = await fetch('/api/send-no-availability-organizer', {
+    const res = await fetch(`${location.origin}/api/send-no-availability-organizer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
