@@ -354,3 +354,5 @@ if (typeof setMultiSlotConfirmation !== 'function') {
     </motion.div>
   );
 }
+
+// ✅ NEW
