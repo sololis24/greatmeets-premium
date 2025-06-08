@@ -93,7 +93,9 @@ export default function PollResultsPage() {
       const alreadyFinalizedSlot = freshData?.lastFinalizationEmailSentForSlot;
       const alreadySentSlots = freshData?.multiFinalizedSlotsSent || [];
       const allInviteesVoted = uniqueVotesArray.length === (data.invitees?.length || 0);
-        
+      
+      
+      
       interface Invitee {
         firstName?: string;
         name?: string;
@@ -138,7 +140,7 @@ export default function PollResultsPage() {
             return i.firstName || i.name || i.email || 'Unnamed';
           });
       
-          await fetch(`${window.location.origin}/api/invitees-missed-deadline-organizer`, {
+          await fetch('/api/invitees-missed-deadline-organizer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -146,18 +148,14 @@ export default function PollResultsPage() {
               name: data.organizerName || 'Organizer',
               pollId,
               meetingTitle: data.title,
-              link: `${window.location.origin}/polls/${pollId}/results`,
-              nonVoterNames: nonVoterNames || [],
+              link: `https://www.greatmeets.ai/polls/${pollId}/results`,
+              nonVoterNames,
             }),
-          }).then((res) => {
-            if (!res.ok) {
-              console.error('❌ Failed to send missed deadline email to organizer.');
-            } else {
-              console.log('📨 Missed deadline email sent to organizer.');
-            }
           });
         }
-        
+      }
+      
+   
       const shouldSendMultiple = data.multiSlotConfirmation && fullyAvailableSlots.length > 0 && allInviteesVoted;
       const shouldSendSingle =
       !data.multiSlotConfirmation &&
@@ -203,20 +201,20 @@ if (
     return;
   }
 
-try {
-  const res = await fetch(`${window.location.origin}/api/send-no-availability-organizer`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: data.organizerEmail,
-      name: data.organizerName || 'Organizer',
-      pollId,
-      meetingTitle: data.title,
-      link: `${window.location.origin}/polls/${pollId}/results`,
-      voterNames,
-      cancellerNames,
-    }),
-  });
+  try {
+    const res = await fetch('/api/send-no-availability-organizer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: data.organizerEmail,
+        name: data.organizerName || 'Organizer',
+        pollId,
+        meetingTitle: data.title,
+        link: `https://www.greatmeets.ai/polls/${pollId}/results`,
+        voterNames,
+        cancellerNames,
+      }),
+    });
 
     if (!res.ok) {
       const errText = await res.text();
@@ -256,7 +254,7 @@ try {
         setOrganizerEmailSentSlots(prev => new Set(prev).add(slot.start));
       }
     }
-  
+
     if (newlySent.length > 0) {
       const inviteeSlotIndexMap: Record<string, number> = {};
       for (const slot of fullyAvailableSlots) {
@@ -277,7 +275,7 @@ try {
                 const currentIndex = (inviteeSlotIndexMap[email] || 0) + 1;
                 inviteeSlotIndexMap[email] = currentIndex;
 
-                await fetch(`${window.location.origin}/api/updated-final-confirmation-invitee`, {
+                await fetch(`${location.origin}/api/updated-final-confirmation-invitee`, { 
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -295,7 +293,6 @@ try {
                     multiSlotConfirmation: true,
                   }),
                 });
-                
                 await new Promise((resolve) => setTimeout(resolve, 600));
               }
             }
@@ -309,7 +306,7 @@ try {
               return i.firstName || i.name || i.email || 'Unnamed';
             });
             
-            await fetch(`${window.location.origin}/api/updated-finalization-organizer`, {
+            await fetch(`${location.origin}/api/updated-finalization-organizer`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -329,7 +326,6 @@ try {
                 nonVoterNames, // ← ADD THIS
               }),
             });
-            
           }
         }
         if (allInviteesVoted && shouldSendSingle) {
@@ -348,7 +344,7 @@ try {
             const duration = data.timeSlots.find((s: any) => s.start === bestSlot)?.duration || 30;
             const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-            await fetch(`${window.location.origin}/api/send-final-confirmation-organizer`, {
+            await fetch(`${location.origin}/api/send-final-confirmation-organizer`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -367,8 +363,7 @@ try {
                 pollId,
               }),
             });
-            
-          
+
             for (const invitee of data.invitees || []) {
               const email = invitee.email?.trim().toLowerCase();
               if (!email) continue;
@@ -377,7 +372,7 @@ try {
               const inviteeTimezone = invitee?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
               console.log("⏱️ Invitee timezone:", invitee?.email, invitee?.timezone, inviteeTimezone);
 
-              await fetch(`${window.location.origin}/api/send-final-confirmation-invitee`, {
+              await fetch(`${location.origin}/api/send-final-confirmation-invitee`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -395,7 +390,6 @@ try {
                   multiSlotConfirmation: false,
                 }),
               });
-              
               await new Promise((resolve) => setTimeout(resolve, 500));
             }
             setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
@@ -409,7 +403,6 @@ try {
     fetchPoll();
     const interval = setInterval(fetchPoll, 10000);
     return () => clearInterval(interval);
-  };
   }, [pollId, searchParamsStr]);
 
   if (!pollData) {

@@ -177,12 +177,11 @@ useEffect(() => {
   
   useEffect(() => {
     if (organizerEmail) {
-      fetch(`${window.location.origin}/api/init-user`, {
+      fetch('/api/init-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: organizerEmail }),
       });
-      
     }
   }, [organizerEmail]);
   
@@ -397,12 +396,11 @@ if (!isPro && !inTrial) {
         deadline, // ✅ Add this line
       };
       
-      const response = await fetch(`${window.location.origin}/api/send-direct-invites`, {
+      const response = await fetch('/api/send-direct-invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailPayload),
       });
-      
   
       const data = await response.json();
   
@@ -427,12 +425,11 @@ if (userToken) {
  
   const handleCreatePoll = async () => {
     // 🔒 Check if user’s trial has expired
-    const res = await fetch(`${window.location.origin}/api/get-user-access`, {
+    const res = await fetch('/api/get-user-access', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: organizerEmail }),
     });
-    
     const { isPro, inTrial } = await res.json();
     
     if (!isPro && !inTrial) {
@@ -503,12 +500,11 @@ if (userToken) {
         multiSlotConfirmation, // ✅ <-- NEW LINE
       };
       
-      const response = await fetch(`${window.location.origin}/api/send-poll-invites`, {
+      const response = await fetch('/api/send-poll-invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailPayload),
       });
-      
   
       const data = await response.json();
   
