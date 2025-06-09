@@ -500,11 +500,12 @@ if (userToken) {
         multiSlotConfirmation, // ✅ <-- NEW LINE
       };
       
-      const response = await fetch('/api/send-poll-invites', {
+      const response = await fetch(`${window.location.origin}/api/send-poll-invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailPayload),
       });
+      
   
       const data = await response.json();
   

@@ -38,6 +38,8 @@ export default function PollResultsPage() {
       const pollSnap = await getDoc(pollRef);
       if (!pollSnap.exists()) return;
 
+
+
       const data = pollSnap.data();
       setPollData(data);
 
@@ -89,6 +91,8 @@ export default function PollResultsPage() {
 
       const freshSnap = await getDoc(pollRef);
       const freshData = freshSnap.data();
+
+      
       const organizerName = freshData?.organizerName || 'Organizer';
       const alreadyFinalizedSlot = freshData?.lastFinalizationEmailSentForSlot;
       const alreadySentSlots = freshData?.multiFinalizedSlotsSent || [];

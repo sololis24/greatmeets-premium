@@ -188,7 +188,7 @@ export default function VotingPage() {
       for (let i = 0; i < newConfirmations.length; i++) {
         const slot = newConfirmations[i];
 
-        await fetch('/api/vote-update-confirmation-invitee', {
+        await fetch(`${window.location.origin}/api/vote-update-confirmation-invitee`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -205,7 +205,7 @@ export default function VotingPage() {
         });
       }
 
-      await fetch('/api/send-thank-you', {
+      await fetch(`${window.location.origin}/api/send-thank-you`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -219,7 +219,7 @@ export default function VotingPage() {
         }),
       });
 
-      await fetch('/api/send-vote-notification', {
+      await fetch(`${window.location.origin}/api/send-vote-notification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -276,7 +276,7 @@ export default function VotingPage() {
     }
 
     try {
-      const res = await fetch('/api/cant-attend', {
+      const res = await fetch(`${window.location.origin}/api/cant-attend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
