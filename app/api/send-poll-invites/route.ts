@@ -11,6 +11,7 @@ function getResend() {
   return new Resend(key);
 }
 
+
 const formatTimeRange = (iso: string, timeZone: string, durationMin: number) => {
   const start = parseISO(iso);
   if (!isValid(start)) {
@@ -75,6 +76,7 @@ export async function POST(req: Request) {
     }
 
     const normalizeEmail = (email: string) => email?.toLowerCase().trim();
+    const normalizedOrganizerEmail = normalizeEmail(organizerEmail); 
     const formattedTimes = selectedTimes.map(({ start, duration }) =>
       formatTimeRange(start, organizerTimezone || 'UTC', duration)
     );
@@ -183,7 +185,9 @@ export async function POST(req: Request) {
     </div>
   `;
   
+  await new Promise((res) => setTimeout(res, 1000));
 
+  console.log(`📨 Sending organizer confirmation to: ${normalizedOrganizerEmail}`);
     try {
       await safeSendEmail({
         from: 'Great Meets <noreply@greatmeets.ai>',

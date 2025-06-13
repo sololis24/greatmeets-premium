@@ -238,7 +238,11 @@ try {
   
     // First: record any new finalized slots (transaction-guarded)
     for (const slot of fullyAvailableSlots) {
-      if (organizerEmailSentSlots.has(slot.start)) continue;
+      if (organizerEmailSentSlots.has(slot.start)) {
+        console.log(`⏩ Skipping slot ${slot.start} for organizer — already sent`);
+        continue;
+      }
+      
   
       const shouldSend = await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(pollRef);
@@ -276,18 +280,18 @@ try {
       for (const slotStart of newlySent) {
         const slot = fullyAvailableSlots.find(s => s.start === slotStart);
         if (!slot) continue;
-  
+      
         const isoTime = slot.start;
         const duration = slot.duration || 30;
+      
   
         for (const invitee of data.invitees || []) {
           const email = invitee.email?.trim().toLowerCase();
-          if (!email) continue;
-  
-          if (inviteeSlotSent[email].has(slot.start)) {
-            console.log(`⏩ Already sent to ${email} for slot ${slot.start}, skipping`);
+          if (!email) {
+            console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
             continue;
           }
+          
   
           const currentIndex = ++inviteeSlotIndexMap[email];
           const name = invitee.firstName || 'there';
@@ -402,7 +406,11 @@ try {
 
             for (const invitee of data.invitees || []) {
               const email = invitee.email?.trim().toLowerCase();
-              if (!email) continue;
+              if (!email) {
+                console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
+                continue;
+              }
+              
 
               
               
