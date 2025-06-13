@@ -14,13 +14,16 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ isPro: false, inTrial: false });
 
     const isPro = user.isPro === true;
+    const isDev = process.env.NODE_ENV === 'development';
 
     let inTrial = false;
-    if (user.trialStartedAt) {
+
+    if (isDev) {
+      inTrial = true;
+    } else if (user.trialStartedAt) {
       const diff = Date.now() - new Date(user.trialStartedAt).getTime();
       inTrial = diff < 7 * 24 * 60 * 60 * 1000;
     }
-
     return NextResponse.json({ isPro, inTrial });
   } catch (error) {
     console.error('❌ get-user-access error:', error);

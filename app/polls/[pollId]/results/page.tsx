@@ -38,8 +38,6 @@ export default function PollResultsPage() {
       const pollSnap = await getDoc(pollRef);
       if (!pollSnap.exists()) return;
 
-
-
       const data = pollSnap.data();
       setPollData(data);
 
@@ -90,16 +88,13 @@ export default function PollResultsPage() {
 // For single-slot polls: avoid using an unvoted time
 
       const freshSnap = await getDoc(pollRef);
-      const freshData = freshSnap.data();
-
-      
+      const freshData = freshSnap.data();     
       const organizerName = freshData?.organizerName || 'Organizer';
       const alreadyFinalizedSlot = freshData?.lastFinalizationEmailSentForSlot;
       const alreadySentSlots = freshData?.multiFinalizedSlotsSent || [];
       const allInviteesVoted = uniqueVotesArray.length === (data.invitees?.length || 0);
       
-      
-      
+    
       interface Invitee {
         firstName?: string;
         name?: string;
@@ -261,7 +256,19 @@ try {
 
     if (newlySent.length > 0) {
       const inviteeSlotIndexMap: Record<string, number> = {};
-      for (const slot of fullyAvailableSlots) {
+  const inviteeSlotSent: Record<string, Set<string>> = {}; // 🧠 Add this line here
+    
+  for (const invitee of data.invitees || []) {
+   
+   
+    const email = invitee.email?.trim().toLowerCase();
+    if (email) {
+      inviteeSlotIndexMap[email] = 0;
+      inviteeSlotSent[email] = new Set();
+    }
+  }
+
+  for (const slot of fullyAvailableSlots) {
         const isoTime = slot.start;
         const duration = slot.duration || 30;
 
@@ -269,6 +276,12 @@ try {
           const email = invitee.email?.trim().toLowerCase();
           if (!email) continue;
 
+          if (inviteeSlotSent[email].has(slot.start)) {
+            console.log(`⏩ Already sent to ${email} for slot ${slot.start}, skipping`);
+            continue;
+          }
+          
+          const currentIndex = ++inviteeSlotIndexMap[email];
           const name = invitee.firstName || 'there';
           const inviteeTimezone =
             invitee && typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
@@ -276,8 +289,6 @@ try {
               : Intl.DateTimeFormat().resolvedOptions().timeZone;
   
                 console.log("⏱️ Invitee timezone:", invitee?.email, invitee?.timezone, inviteeTimezone);
-                const currentIndex = (inviteeSlotIndexMap[email] || 0) + 1;
-                inviteeSlotIndexMap[email] = currentIndex;
 
                 await fetch(`${location.origin}/api/updated-final-confirmation-invitee`, { 
                   method: 'POST',
@@ -297,6 +308,7 @@ try {
                     multiSlotConfirmation: true,
                   }),
                 });
+                inviteeSlotSent[email].add(slot.start); // ✅ Mark slot as sent for this invitee
                 await new Promise((resolve) => setTimeout(resolve, 600));
               }
             }
@@ -310,26 +322,37 @@ try {
               return i.firstName || i.name || i.email || 'Unnamed';
             });
             
-            await fetch(`${location.origin}/api/updated-finalization-organizer`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                to: data.organizerEmail,
-                name: organizerName,
-                organizerTimezone,
-                recipientTimezone: organizerTimezone,
-                meetingTitle: data.title,
-                meetingLink: data.meetingLink,
-                link: `${window.location.origin}/polls/${pollId}/results`,
-                multiSlotConfirmation: true,
-                slots: allSlots,
-                previouslySentCount: alreadySentSlots.length,
-                voterNames,
-                cancellerNames,
-                pollId,
-                nonVoterNames, // ← ADD THIS
-              }),
-            });
+
+            for (let i = 0; i < newlySent.length; i++) {
+              const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
+              if (!slot) continue;
+            
+              await fetch(`${location.origin}/api/updated-finalization-organizer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  to: data.organizerEmail,
+                  name: organizerName,
+                  organizerTimezone,
+                  recipientTimezone: organizerTimezone,
+                  meetingTitle: data.title,
+                  meetingLink: data.meetingLink,
+                  link: `${window.location.origin}/polls/${pollId}/results`,
+                  multiSlotConfirmation: true,
+                  slots: [slot], // one at a time
+                  slotIndex: i + 1,
+                  totalSlots: fullyAvailableSlots.length,
+                  previouslySentCount: alreadySentSlots.length,
+                  voterNames,
+                  cancellerNames,
+                  pollId,
+                  nonVoterNames,
+                }),
+              });
+            
+              await new Promise((resolve) => setTimeout(resolve, 600)); // space out sends
+            }
+            
           }
         }
         if (allInviteesVoted && shouldSendSingle) {
@@ -372,6 +395,8 @@ try {
               const email = invitee.email?.trim().toLowerCase();
               if (!email) continue;
 
+              
+              
               const name = invitee.firstName || 'there';
               const inviteeTimezone = invitee?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
               console.log("⏱️ Invitee timezone:", invitee?.email, invitee?.timezone, inviteeTimezone);
