@@ -232,11 +232,14 @@ try {
     console.log(`⏳ Waiting for all invitees to vote. Votes received: ${uniqueVotesArray.length}/${data.invitees?.length}`);
   }
 
+
   if (allInviteesVoted && shouldSendMultiple) {
     const newlySent: string[] = [];
-
+  
+    // First: record any new finalized slots (transaction-guarded)
     for (const slot of fullyAvailableSlots) {
       if (organizerEmailSentSlots.has(slot.start)) continue;
+  
       const shouldSend = await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(pollRef);
         const pollData = snap.data();
@@ -247,40 +250,45 @@ try {
         });
         return true;
       });
-
+  
       if (shouldSend) {
+        console.log("✅ Slot confirmed and queued for email:", slot.start);
         newlySent.push(slot.start);
         setOrganizerEmailSentSlots(prev => new Set(prev).add(slot.start));
       }
     }
-
+  
     if (newlySent.length > 0) {
+      console.log("📤 newlySent slots:", newlySent);
+  
       const inviteeSlotIndexMap: Record<string, number> = {};
-  const inviteeSlotSent: Record<string, Set<string>> = {}; // 🧠 Add this line here
-    
-  for (const invitee of data.invitees || []) {
-   
-   
-    const email = invitee.email?.trim().toLowerCase();
-    if (email) {
-      inviteeSlotIndexMap[email] = 0;
-      inviteeSlotSent[email] = new Set();
-    }
-  }
-
-  for (const slot of fullyAvailableSlots) {
+      const inviteeSlotSent: Record<string, Set<string>> = {};
+  
+      for (const invitee of data.invitees || []) {
+        const email = invitee.email?.trim().toLowerCase();
+        if (email) {
+          inviteeSlotIndexMap[email] = 0;
+          inviteeSlotSent[email] = new Set();
+        }
+      }
+  
+      // ✅ Loop over newly sent slots only
+      for (const slotStart of newlySent) {
+        const slot = fullyAvailableSlots.find(s => s.start === slotStart);
+        if (!slot) continue;
+  
         const isoTime = slot.start;
         const duration = slot.duration || 30;
-
+  
         for (const invitee of data.invitees || []) {
           const email = invitee.email?.trim().toLowerCase();
           if (!email) continue;
-
+  
           if (inviteeSlotSent[email].has(slot.start)) {
             console.log(`⏩ Already sent to ${email} for slot ${slot.start}, skipping`);
             continue;
           }
-          
+  
           const currentIndex = ++inviteeSlotIndexMap[email];
           const name = invitee.firstName || 'there';
           const inviteeTimezone =
@@ -288,73 +296,74 @@ try {
               ? invitee.timezone
               : Intl.DateTimeFormat().resolvedOptions().timeZone;
   
-                console.log("⏱️ Invitee timezone:", invitee?.email, invitee?.timezone, inviteeTimezone);
-
-                await fetch(`${location.origin}/api/updated-final-confirmation-invitee`, { 
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    to: email,
-                    name,
-                    time: isoTime,
-                    duration,
-                    recipientTimezone: inviteeTimezone,
-                    organizerName,
-                    link: `${window.location.origin}/polls/${pollId}/results`,
-                    meetingLink: data.meetingLink,
-                    meetingTitle: data.title,
-                    slotIndex: currentIndex,
-                    totalSlots: fullyAvailableSlots.length,
-                    multiSlotConfirmation: true,
-                  }),
-                });
-                inviteeSlotSent[email].add(slot.start); // ✅ Mark slot as sent for this invitee
-                await new Promise((resolve) => setTimeout(resolve, 600));
-              }
-            }
-            const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const allSlots = fullyAvailableSlots.map((slot) => ({
-              time: slot.start,
-              duration: slot.duration || 30,
-            }));
-
-            const nonVoterNames = nonVoters.map((i: Invitee) => {
-              return i.firstName || i.name || i.email || 'Unnamed';
-            });
-            
-
-            for (let i = 0; i < newlySent.length; i++) {
-              const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
-              if (!slot) continue;
-            
-              await fetch(`${location.origin}/api/updated-finalization-organizer`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  to: data.organizerEmail,
-                  name: organizerName,
-                  organizerTimezone,
-                  recipientTimezone: organizerTimezone,
-                  meetingTitle: data.title,
-                  meetingLink: data.meetingLink,
-                  link: `${window.location.origin}/polls/${pollId}/results`,
-                  multiSlotConfirmation: true,
-                  slots: [slot], // one at a time
-                  slotIndex: i + 1,
-                  totalSlots: fullyAvailableSlots.length,
-                  previouslySentCount: alreadySentSlots.length,
-                  voterNames,
-                  cancellerNames,
-                  pollId,
-                  nonVoterNames,
-                }),
-              });
-            
-              await new Promise((resolve) => setTimeout(resolve, 600)); // space out sends
-            }
-            
-          }
+          console.log(`📩 Sending invitee ${email} email (${currentIndex}/${newlySent.length}) for slot ${slot.start}`);
+  
+          await fetch(`${location.origin}/api/updated-final-confirmation-invitee`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: email,
+              name,
+              time: isoTime,
+              duration,
+              recipientTimezone: inviteeTimezone,
+              organizerName,
+              link: `${window.location.origin}/polls/${pollId}/results`,
+              meetingLink: data.meetingLink,
+              meetingTitle: data.title,
+              slotIndex: currentIndex,
+              totalSlots: newlySent.length,
+              multiSlotConfirmation: true,
+            }),
+          });
+  
+          inviteeSlotSent[email].add(slot.start);
+          await new Promise((resolve) => setTimeout(resolve, 600));
         }
+      }
+  
+      // ✅ Organizer logic: one email per newly confirmed slot
+      const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const nonVoterNames = nonVoters.map((i: Invitee) => i.firstName || i.name || i.email || 'Unnamed');
+  
+      for (let i = 0; i < newlySent.length; i++) {
+        const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
+        if (!slot) continue;
+  
+        console.log(`📨 Sending organizer email for slot ${slot.start} (${i + 1}/${newlySent.length})`);
+  
+        await fetch(`${location.origin}/api/updated-finalization-organizer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: data.organizerEmail,
+            name: organizerName,
+            organizerTimezone,
+            recipientTimezone: organizerTimezone,
+            meetingTitle: data.title,
+            meetingLink: data.meetingLink,
+            link: `${window.location.origin}/polls/${pollId}/results`,
+            multiSlotConfirmation: true,
+            slots: [slot], // one at a time
+            slotIndex: i + 1,
+            totalSlots: newlySent.length,
+            previouslySentCount: i, // optional
+            voterNames,
+            cancellerNames,
+            pollId,
+            nonVoterNames,
+          }),
+        });
+  
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
+    }
+  }
+  
+
+
+
+
         if (allInviteesVoted && shouldSendSingle) {
           const finalized = await runTransaction(db, async (transaction) => {
             const snap = await transaction.get(pollRef);
