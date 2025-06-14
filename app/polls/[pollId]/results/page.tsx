@@ -302,7 +302,6 @@ try {
   
 
 
-
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(pollRef);
@@ -327,7 +326,7 @@ try {
   
       // ✅ Send to organizer
       if (organizerEmail) {
-        await fetch(`${location.origin}/api/send-all-finalizations`, {
+        await fetch(`${location.origin}/api/send-single-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -336,14 +335,13 @@ try {
             name: organizerName,
             organizerTimezone,
             recipientTimezone: organizerTimezone,
+            time: bestSlot,
+            duration,
             meetingTitle: data.title,
             meetingLink: data.meetingLink,
-            link: pollLink,
+            pollLink,
             multiSlotConfirmation: false,
-            slots: [{ start: bestSlot, duration }],
-            voterNames,
-            cancellerNames,
-            pollId,
+            nonVoterNames: nonVoters.map((i: any) => i.firstName || i.name || i.email || 'Unnamed'),
           }),
         });
       }
@@ -364,7 +362,7 @@ try {
   
         console.log("📨 Sending invitee confirmation:", email, bestSlot, inviteeTimezone);
   
-        await fetch(`${location.origin}/api/send-all-finalizations`, {
+        await fetch(`${location.origin}/api/send-single-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -375,7 +373,7 @@ try {
             duration,
             recipientTimezone: inviteeTimezone,
             organizerName,
-            link: pollLink,
+            pollLink,
             meetingLink: data.meetingLink,
             meetingTitle: data.title,
             slotIndex: 1,
@@ -393,8 +391,6 @@ try {
     }
   }
   
-
-
 
 
       } catch (err) {
