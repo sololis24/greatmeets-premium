@@ -174,18 +174,35 @@ export async function POST(req: Request) {
 
     // SINGLE SLOT PATH
     if (to && time && duration) {
-      await sendEmail({
-        to,
-        name: name || 'there',
-        slot: { start: time, duration },
-        index: slotIndex,
-        total: totalSlots,
-        timezone: recipientTimezone || 'UTC',
-        type: type || 'invitee',
-      });
-
-      return new Response('Single confirmation email sent.', { status: 200 });
-    }
+        const timezone = recipientTimezone || 'UTC';
+        const slot = { start: time, duration };
+      
+        await sendEmail({
+          to,
+          name: name || 'there',
+          slot,
+          index: slotIndex,
+          total: totalSlots,
+          timezone,
+          type: type || 'invitee',
+        });
+      
+        // Check if this is an organizer; if not, also send organizer confirmation
+        if (type !== 'organizer' && organizerEmail && organizerName) {
+          await sendEmail({
+            to: organizerEmail,
+            name: organizerName,
+            slot,
+            index: slotIndex,
+            total: totalSlots,
+            timezone: organizerTimezone || 'UTC',
+            type: 'organizer',
+          });
+        }
+      
+        return new Response('Single confirmation email(s) sent.', { status: 200 });
+      }
+      
 
     // MULTI-SLOT PATH
     for (const invitee of invitees) {
