@@ -265,7 +265,7 @@ try {
     if (newlySent.length > 0) {
       console.log("📤 newlySent slots:", newlySent);
   
-      // ✅ Invitee email logic (one email per slot per invitee)
+      // ✅ Invitee logic: loop per invitee → then per slot (fresh index per invitee)
       for (const invitee of data.invitees || []) {
         const email = invitee.email?.trim().toLowerCase();
         if (!email) {
@@ -281,7 +281,10 @@ try {
   
         for (let i = 0; i < newlySent.length; i++) {
           const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
-          if (!slot) continue;
+          if (!slot) {
+            console.warn(`⚠️ Slot ${newlySent[i]} not found for invitee ${email}`);
+            continue;
+          }
   
           const isoTime = slot.start;
           const duration = slot.duration || 30;
@@ -318,52 +321,60 @@ try {
         }
       }
   
-      // ✅ Organizer email logic (one per slot)
+      // ✅ Organizer logic: 1 email per finalized slot
+      const organizerEmail = data.organizerEmail?.trim().toLowerCase();
       const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       const nonVoterNames = nonVoters.map((i: Invitee) => i.firstName || i.name || i.email || 'Unnamed');
   
-      for (let i = 0; i < newlySent.length; i++) {
-        const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
-        if (!slot) {
-          console.warn(`⚠️ Organizer slot not found for ${newlySent[i]}`);
-          continue;
+      if (!organizerEmail) {
+        console.warn('⚠️ No organizer email provided. Skipping organizer confirmation emails.');
+      } else {
+        for (let i = 0; i < newlySent.length; i++) {
+          const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
+          if (!slot) {
+            console.warn(`⚠️ Organizer slot not found for ${newlySent[i]}`);
+            continue;
+          }
+  
+          const slotIndex = i + 1;
+  
+          console.log(`📨 Sending organizer email (${slotIndex}/${newlySent.length}) for slot ${slot.start}`);
+  
+          try {
+            await fetch(`${location.origin}/api/updated-finalization-organizer`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: organizerEmail,
+                name: organizerName,
+                organizerTimezone,
+                recipientTimezone: organizerTimezone,
+                meetingTitle: data.title,
+                meetingLink: data.meetingLink,
+                link: `${window.location.origin}/polls/${pollId}/results`,
+                multiSlotConfirmation: true,
+                slots: [slot],
+                slotIndex,
+                totalSlots: newlySent.length,
+                previouslySentCount: i,
+                voterNames,
+                cancellerNames,
+                pollId,
+                nonVoterNames,
+              }),
+            });
+          } catch (err) {
+            console.error(`🚨 Failed to send organizer email for slot ${slot.start}:`, err);
+          }
+  
+          await new Promise((resolve) => setTimeout(resolve, 600));
         }
-  
-        console.log(`📨 Sending organizer email for slot ${slot.start} (${i + 1}/${newlySent.length})`);
-  
-        try {
-          await fetch(`${location.origin}/api/updated-finalization-organizer`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: data.organizerEmail,
-              name: organizerName,
-              organizerTimezone,
-              recipientTimezone: organizerTimezone,
-              meetingTitle: data.title,
-              meetingLink: data.meetingLink,
-              link: `${window.location.origin}/polls/${pollId}/results`,
-              multiSlotConfirmation: true,
-              slots: [slot],
-              slotIndex: i + 1,
-              totalSlots: newlySent.length,
-              previouslySentCount: i,
-              voterNames,
-              cancellerNames,
-              pollId,
-              nonVoterNames,
-            }),
-          });
-        } catch (err) {
-          console.error(`🚨 Failed to send organizer email for slot ${slot.start}:`, err);
-        }
-  
-        await new Promise((resolve) => setTimeout(resolve, 600));
       }
     } else {
       console.log("🚫 No new slots were finalized. No emails sent.");
     }
   }
+  
   
 
 
