@@ -327,7 +327,7 @@ try {
       // ✅ Organizer email
       if (organizerEmail) {
         try {
-          await fetch(`${location.origin}/api/send-all-finalizations`, {
+          const res = await fetch(`${location.origin}/api/send-all-finalizations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -346,7 +346,13 @@ try {
               pollId,
             }),
           });
-          console.log(`📨 Organizer email sent for single slot ${bestSlot}`);
+  
+          if (!res.ok) {
+            const errText = await res.text();
+            console.error(`🚨 Organizer email failed: ${res.status} - ${errText}`);
+          } else {
+            console.log(`📨 Organizer email sent for ${bestSlot}`);
+          }
         } catch (err) {
           console.error(`🚨 Failed to send organizer email:`, err);
         }
@@ -369,7 +375,7 @@ try {
             : Intl.DateTimeFormat().resolvedOptions().timeZone;
   
         try {
-          await fetch(`${location.origin}/api/send-all-finalizations`, {
+          const res = await fetch(`${location.origin}/api/send-all-finalizations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -388,7 +394,13 @@ try {
               multiSlotConfirmation: false,
             }),
           });
-          console.log(`📩 Invitee email sent to ${email} for single slot`);
+  
+          if (!res.ok) {
+            const errText = await res.text();
+            console.error(`🚨 Invitee email failed to ${email}: ${res.status} - ${errText}`);
+          } else {
+            console.log(`📩 Invitee email sent to ${email} for single slot`);
+          }
         } catch (err) {
           console.error(`🚨 Error sending invitee email to ${email}:`, err);
         }
@@ -403,11 +415,15 @@ try {
   }
   
 
-
+        
       } catch (err) {
         console.warn('❌ Error sending emails:', err);
       }
     };
+
+
+
+
     
     fetchPoll();
     const interval = setInterval(fetchPoll, 10000);
