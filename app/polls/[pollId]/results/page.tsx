@@ -301,6 +301,8 @@ try {
     }
   }
   
+
+
   
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
@@ -340,7 +342,7 @@ try {
               meetingLink: data.meetingLink,
               link: pollLink,
               multiSlotConfirmation: false,
-              slots: [{ time: bestSlot, duration }],
+              slots: [{ start: bestSlot, duration }],
               voterNames,
               cancellerNames,
               pollId,
