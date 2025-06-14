@@ -235,11 +235,10 @@ try {
 
 
 
-
   if (allInviteesVoted && shouldSendMultiple) {
     const newlySent: string[] = [];
   
-    // First: record any new finalized slots (transaction-guarded)
+    // Step 1: Record newly finalized slots
     for (const slot of fullyAvailableSlots) {
       const shouldSend = await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(pollRef);
@@ -266,39 +265,31 @@ try {
     if (newlySent.length > 0) {
       console.log("📤 newlySent slots:", newlySent);
   
-      const inviteeSlotIndexMap: Record<string, number> = {};
-      const inviteeSlotSent: Record<string, Set<string>> = {};
-  
+      // ✅ Invitee email logic (one email per slot per invitee)
       for (const invitee of data.invitees || []) {
         const email = invitee.email?.trim().toLowerCase();
-        if (email) {
-          inviteeSlotIndexMap[email] = 0;
-          inviteeSlotSent[email] = new Set();
+        if (!email) {
+          console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
+          continue;
         }
-      }
   
-      for (const slotStart of newlySent) {
-        const slot = fullyAvailableSlots.find(s => s.start === slotStart);
-        if (!slot) continue;
+        const name = invitee.firstName || 'there';
+        const inviteeTimezone =
+          typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
+            ? invitee.timezone
+            : Intl.DateTimeFormat().resolvedOptions().timeZone;
   
-        const isoTime = slot.start;
-        const duration = slot.duration || 30;
+        for (let i = 0; i < newlySent.length; i++) {
+          const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
+          if (!slot) continue;
   
-        for (const invitee of data.invitees || []) {
-          const email = invitee.email?.trim().toLowerCase();
-          if (!email) {
-            console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
-            continue;
-          }
+          const isoTime = slot.start;
+          const duration = slot.duration || 30;
   
-          const currentIndex = ++inviteeSlotIndexMap[email];
-          const name = invitee.firstName || 'there';
-          const inviteeTimezone =
-            invitee && typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
-              ? invitee.timezone
-              : Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const slotIndex = i + 1;
+          const totalSlots = newlySent.length;
   
-          console.log(`📩 Sending invitee ${email} email (${currentIndex}/${newlySent.length}) for slot ${slot.start}`);
+          console.log(`📩 Sending invitee ${email} email (${slotIndex}/${totalSlots}) for slot ${slot.start}`);
   
           try {
             await fetch(`${location.origin}/api/updated-final-confirmation-invitee`, {
@@ -314,12 +305,11 @@ try {
                 link: `${window.location.origin}/polls/${pollId}/results`,
                 meetingLink: data.meetingLink,
                 meetingTitle: data.title,
-                slotIndex: currentIndex,
-                totalSlots: newlySent.length,
+                slotIndex,
+                totalSlots,
                 multiSlotConfirmation: true,
               }),
             });
-            inviteeSlotSent[email].add(slot.start);
           } catch (err) {
             console.error(`🚨 Error sending invitee email to ${email} for slot ${slot.start}:`, err);
           }
@@ -328,7 +318,7 @@ try {
         }
       }
   
-      // Organizer logic — one email per finalized slot
+      // ✅ Organizer email logic (one per slot)
       const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       const nonVoterNames = nonVoters.map((i: Invitee) => i.firstName || i.name || i.email || 'Unnamed');
   
