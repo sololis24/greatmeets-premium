@@ -234,9 +234,9 @@ try {
   }
 
 
-
+  
   if (allInviteesVoted && shouldSendMultiple) {
-    const newlySent: string[] = [];
+    const newlySent: { start: string; duration: number }[] = [];
   
     // Step 1: Record newly finalized slots
     for (const slot of fullyAvailableSlots) {
@@ -256,119 +256,45 @@ try {
   
       if (shouldSend) {
         console.log("✅ Slot confirmed and queued for email:", slot.start);
-        newlySent.push(slot.start);
+        newlySent.push({ start: slot.start, duration: slot.duration || 30 });
       } else {
         console.log(`⏩ Slot ${slot.start} already finalized or failed to write`);
       }
     }
   
     if (newlySent.length > 0) {
-      console.log("📤 newlySent slots:", newlySent);
+      console.log("📤 Finalized slots to email:", newlySent);
   
-      // ✅ Invitee logic: loop per invitee → then per slot (fresh index per invitee)
-      for (const invitee of data.invitees || []) {
-        const email = invitee.email?.trim().toLowerCase();
-        if (!email) {
-          console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
-          continue;
+      const pollLink = `${window.location.origin}/polls/${pollId}/results`;
+      const nonVoterNames = nonVoters.map(
+        (i: Invitee) => i.firstName || i.name || i.email || 'Unnamed'
+      );
+  
+      try {
+        const res = await fetch(`${location.origin}/api/send-all-finalizations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invitees: data.invitees || [],
+            organizerEmail: data.organizerEmail,
+            organizerName,
+            organizerTimezone: data.organizerTimezone,
+            newlySentSlots: newlySent,
+            meetingTitle: data.title,
+            meetingLink: data.meetingLink,
+            pollLink,
+            nonVoterNames,
+            multiSlotConfirmation: true,
+          }),
+        });
+  
+        if (!res.ok) {
+          console.error('❌ Failed to send finalization emails:', await res.text());
+        } else {
+          console.log('✅ Finalization emails sent successfully');
         }
-  
-        const name = invitee.firstName || 'there';
-        const inviteeTimezone =
-          typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
-            ? invitee.timezone
-            : Intl.DateTimeFormat().resolvedOptions().timeZone;
-  
-        for (let i = 0; i < newlySent.length; i++) {
-          const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
-          if (!slot) {
-            console.warn(`⚠️ Slot ${newlySent[i]} not found for invitee ${email}`);
-            continue;
-          }
-  
-          const isoTime = slot.start;
-          const duration = slot.duration || 30;
-  
-          const slotIndex = i + 1;
-          const totalSlots = newlySent.length;
-  
-          console.log(`📩 Sending invitee ${email} email (${slotIndex}/${totalSlots}) for slot ${slot.start}`);
-  
-          try {
-            await fetch(`${location.origin}/api/updated-final-confirmation-invitee`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                to: email,
-                name,
-                time: isoTime,
-                duration,
-                recipientTimezone: inviteeTimezone,
-                organizerName,
-                link: `${window.location.origin}/polls/${pollId}/results`,
-                meetingLink: data.meetingLink,
-                meetingTitle: data.title,
-                slotIndex,
-                totalSlots,
-                multiSlotConfirmation: true,
-              }),
-            });
-          } catch (err) {
-            console.error(`🚨 Error sending invitee email to ${email} for slot ${slot.start}:`, err);
-          }
-  
-          await new Promise((resolve) => setTimeout(resolve, 600));
-        }
-      }
-  
-      // ✅ Organizer logic: 1 email per finalized slot
-      const organizerEmail = data.organizerEmail?.trim().toLowerCase();
-      const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const nonVoterNames = nonVoters.map((i: Invitee) => i.firstName || i.name || i.email || 'Unnamed');
-  
-      if (!organizerEmail) {
-        console.warn('⚠️ No organizer email provided. Skipping organizer confirmation emails.');
-      } else {
-        for (let i = 0; i < newlySent.length; i++) {
-          const slot = fullyAvailableSlots.find(s => s.start === newlySent[i]);
-          if (!slot) {
-            console.warn(`⚠️ Organizer slot not found for ${newlySent[i]}`);
-            continue;
-          }
-  
-          const slotIndex = i + 1;
-  
-          console.log(`📨 Sending organizer email (${slotIndex}/${newlySent.length}) for slot ${slot.start}`);
-  
-          try {
-            await fetch(`${location.origin}/api/updated-finalization-organizer`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                to: organizerEmail,
-                name: organizerName,
-                organizerTimezone,
-                recipientTimezone: organizerTimezone,
-                meetingTitle: data.title,
-                meetingLink: data.meetingLink,
-                link: `${window.location.origin}/polls/${pollId}/results`,
-                multiSlotConfirmation: true,
-                slots: [slot],
-                slotIndex,
-                totalSlots: newlySent.length,
-                previouslySentCount: i,
-                voterNames,
-                cancellerNames,
-                pollId,
-                nonVoterNames,
-              }),
-            });
-          } catch (err) {
-            console.error(`🚨 Failed to send organizer email for slot ${slot.start}:`, err);
-          }
-  
-          await new Promise((resolve) => setTimeout(resolve, 600));
-        }
+      } catch (err) {
+        console.error('🚨 Error calling send-all-finalizations API:', err);
       }
     } else {
       console.log("🚫 No new slots were finalized. No emails sent.");
@@ -376,9 +302,6 @@ try {
   }
   
   
-
-
-
 
         if (allInviteesVoted && shouldSendSingle) {
           const finalized = await runTransaction(db, async (transaction) => {
@@ -396,7 +319,7 @@ try {
             const duration = data.timeSlots.find((s: any) => s.start === bestSlot)?.duration || 30;
             const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-            await fetch(`${location.origin}/api/send-final-confirmation-organizer`, {
+            await fetch(`${location.origin}/api/send-all-finalizations`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -430,7 +353,7 @@ try {
               const inviteeTimezone = invitee?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
               console.log("⏱️ Invitee timezone:", invitee?.email, invitee?.timezone, inviteeTimezone);
 
-              await fetch(`${location.origin}/api/send-final-confirmation-invitee`, {
+              await fetch(`${location.origin}/api/send-all-finalizations`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
