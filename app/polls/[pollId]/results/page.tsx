@@ -326,13 +326,13 @@ try {
   
       // ✅ Send to organizer
       if (organizerEmail) {
-        await fetch(`${location.origin}/api/send-single-confirmation`, {
+        const res = await fetch(`${location.origin}/api/send-single-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'organizer',
             to: organizerEmail,
-            name: organizerName,
+            name: 'Organizer',
+            organizerName,
             organizerTimezone,
             recipientTimezone: organizerTimezone,
             time: bestSlot,
@@ -344,6 +344,7 @@ try {
             nonVoterNames: nonVoters.map((i: any) => i.firstName || i.name || i.email || 'Unnamed'),
           }),
         });
+        console.log('📤 Organizer email sent. Status:', res.status, await res.text());
       }
   
       // ✅ Send to each invitee
@@ -362,11 +363,10 @@ try {
   
         console.log("📨 Sending invitee confirmation:", email, bestSlot, inviteeTimezone);
   
-        await fetch(`${location.origin}/api/send-single-confirmation`, {
+        const res = await fetch(`${location.origin}/api/send-single-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'invitee',
             to: email,
             name,
             time: bestSlot,
@@ -382,6 +382,7 @@ try {
           }),
         });
   
+        console.log(`📤 Invitee email sent to ${email}. Status:`, res.status, await res.text());
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
   
@@ -390,6 +391,7 @@ try {
       console.log('⏩ Single slot was already finalized. Skipping emails.');
     }
   }
+  
   
 
 

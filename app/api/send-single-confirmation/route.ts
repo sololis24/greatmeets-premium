@@ -1,18 +1,22 @@
 import { Resend } from 'resend';
 import { formatInTimeZone } from 'date-fns-tz';
 
+if (!process.env.RESEND_API_KEY) {
+  console.error('❌ RESEND_API_KEY is not defined');
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
     const {
-      to, // invitee email
-      name, // invitee name
+      to,
+      name,
       organizerEmail,
       organizerName,
       organizerTimezone,
       recipientTimezone,
-      time, // ISO string
+      time,
       duration = 30,
       meetingTitle,
       meetingLink,
@@ -21,7 +25,25 @@ export async function POST(req: Request) {
       nonVoterNames = [],
     } = await req.json();
 
-    if (!to || !organizerEmail || !time || !duration || !meetingTitle) {
+    console.log('➡️ Received single-confirmation request:', {
+      to,
+      organizerEmail,
+      time,
+      duration,
+      meetingTitle,
+      pollLink,
+    });
+
+    // Expanded required fields check
+    if (
+      !to ||
+      !organizerEmail ||
+      !time ||
+      !duration ||
+      !meetingTitle ||
+      !pollLink
+    ) {
+      console.warn('❌ Missing required fields');
       return new Response('Missing required fields', { status: 400 });
     }
 
@@ -40,7 +62,7 @@ export async function POST(req: Request) {
       timezone: string;
     }) => {
       const start = new Date(slot.start);
-      const end = new Date(start.getTime() + (slot.duration || 30) * 60000);
+      const end = new Date(start.getTime() + slot.duration * 60000);
 
       const formattedDate = formatInTimeZone(start, timezone, "EEEE, d MMM yyyy");
       const startTime = formatInTimeZone(start, timezone, 'HH:mm');
@@ -49,8 +71,11 @@ export async function POST(req: Request) {
 
       const gcalStart = formatInTimeZone(start, 'UTC', "yyyyMMdd'T'HHmmss'Z'");
       const gcalEnd = formatInTimeZone(end, 'UTC', "yyyyMMdd'T'HHmmss'Z'");
-
-      const googleCalURL = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(meetingTitle)}&dates=${gcalStart}/${gcalEnd}&details=${encodeURIComponent('Scheduled via GreatMeets')}&location=${encodeURIComponent(meetingLink || '')}`;
+      const googleCalURL = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        meetingTitle
+      )}&dates=${gcalStart}/${gcalEnd}&details=${encodeURIComponent(
+        'Scheduled via GreatMeets'
+      )}&location=${encodeURIComponent(meetingLink || '')}`;
 
       const subject = '📅 Your Great Meet Time is Confirmed';
 
@@ -143,7 +168,8 @@ export async function POST(req: Request) {
         ],
       });
 
-      console.log(`📤 Sent to ${type}: ${to}, status:`, result);
+      console.log(`📤 Email sent to ${type}: ${to}`);
+      console.log(`📨 Resend response:`, JSON.stringify(result, null, 2));
     };
 
     await sendEmail({
@@ -160,9 +186,9 @@ export async function POST(req: Request) {
       timezone: organizerTimezone || 'UTC',
     });
 
-    return new Response('Single confirmation emails sent.', { status: 200 });
+    return new Response('✅ Single confirmation emails sent.', { status: 200 });
   } catch (err: any) {
-    console.error('❌ send-single-confirmation failed:', err.message || err);
+    console.error('❌ send-single-confirmation failed:', err?.message || err);
     return new Response('Internal Server Error', { status: 500 });
   }
 }
