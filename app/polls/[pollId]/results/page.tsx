@@ -234,6 +234,7 @@ try {
   }
 
 
+
   if (allInviteesVoted && shouldSendMultiple) {
     const newlySent: { start: string; duration: number }[] = [];
   
@@ -301,7 +302,6 @@ try {
   }
   
 
-
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(pollRef);
@@ -330,6 +330,7 @@ try {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            type: 'organizer', // <-- REQUIRED
             to: organizerEmail,
             name: 'Organizer',
             organizerName,
@@ -367,6 +368,7 @@ try {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            type: 'invitee', // <-- REQUIRED
             to: email,
             name,
             time: bestSlot,
