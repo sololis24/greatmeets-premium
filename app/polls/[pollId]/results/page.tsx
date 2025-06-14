@@ -302,7 +302,6 @@ try {
   }
   
   
-
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(pollRef);
@@ -332,16 +331,16 @@ try {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              type: 'organizer',
               to: organizerEmail,
               name: organizerName,
-              time: bestSlot,
-              duration,
-              recipientTimezone: organizerTimezone,
               organizerTimezone,
+              recipientTimezone: organizerTimezone,
               meetingTitle: data.title,
               meetingLink: data.meetingLink,
               link: pollLink,
               multiSlotConfirmation: false,
+              slots: [{ time: bestSlot, duration }],
               voterNames,
               cancellerNames,
               pollId,
@@ -374,6 +373,7 @@ try {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              type: 'invitee',
               to: email,
               name,
               time: bestSlot,
@@ -401,9 +401,9 @@ try {
       console.log('⏩ Single slot was already finalized. Skipping emails.');
     }
   }
-
-
   
+
+
       } catch (err) {
         console.warn('❌ Error sending emails:', err);
       }
