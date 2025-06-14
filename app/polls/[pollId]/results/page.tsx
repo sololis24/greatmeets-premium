@@ -300,90 +300,108 @@ try {
     }
   }
   
+
+
+
+  if (allInviteesVoted && shouldSendSingle) {
+    const finalized = await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(pollRef);
+      const pollData = snap.data();
+      if (pollData?.lastFinalizationEmailSentForSlot === bestSlot) return false;
+      transaction.update(pollRef, {
+        lastFinalizationEmailSentForSlot: bestSlot,
+        finalizedSlot: bestSlot,
+      });
+      return true;
+    });
+  
+    if (finalized) {
+      console.log('✅ Finalizing single slot:', bestSlot);
+  
+      const slot = data.timeSlots.find((s: any) => s.start === bestSlot);
+      const duration = slot?.duration || 30;
+      const pollLink = `${window.location.origin}/polls/${pollId}/results`;
+  
+      const organizerEmail = data.organizerEmail?.trim().toLowerCase();
+      const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+      // ✅ Send to organizer
+      if (organizerEmail) {
+        await fetch(`${location.origin}/api/send-all-finalizations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'organizer',
+            to: organizerEmail,
+            name: organizerName,
+            organizerTimezone,
+            recipientTimezone: organizerTimezone,
+            meetingTitle: data.title,
+            meetingLink: data.meetingLink,
+            link: pollLink,
+            multiSlotConfirmation: false,
+            slots: [{ start: bestSlot, duration }],
+            voterNames,
+            cancellerNames,
+            pollId,
+          }),
+        });
+      }
+  
+      // ✅ Send to each invitee
+      for (const invitee of data.invitees || []) {
+        const email = invitee.email?.trim().toLowerCase();
+        if (!email) {
+          console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
+          continue;
+        }
+  
+        const name = invitee.firstName || 'there';
+        const inviteeTimezone =
+          typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
+            ? invitee.timezone
+            : Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+        console.log("📨 Sending invitee confirmation:", email, bestSlot, inviteeTimezone);
+  
+        await fetch(`${location.origin}/api/send-all-finalizations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'invitee',
+            to: email,
+            name,
+            time: bestSlot,
+            duration,
+            recipientTimezone: inviteeTimezone,
+            organizerName,
+            link: pollLink,
+            meetingLink: data.meetingLink,
+            meetingTitle: data.title,
+            slotIndex: 1,
+            totalSlots: 1,
+            multiSlotConfirmation: false,
+          }),
+        });
+  
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+  
+      setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
+    } else {
+      console.log('⏩ Single slot was already finalized. Skipping emails.');
+    }
+  }
   
 
 
-        if (allInviteesVoted && shouldSendSingle) {
-          const finalized = await runTransaction(db, async (transaction) => {
-            const snap = await transaction.get(pollRef);
-            const pollData = snap.data();
-            if (pollData?.lastFinalizationEmailSentForSlot === bestSlot) return false;
-            transaction.update(pollRef, {
-              lastFinalizationEmailSentForSlot: bestSlot,
-              finalizedSlot: bestSlot,
-            });
-            return true;
-          });
 
-          if (finalized) {
-            const duration = data.timeSlots.find((s: any) => s.start === bestSlot)?.duration || 30;
-            const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-            await fetch(`${location.origin}/api/send-all-finalizations`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                to: data.organizerEmail,
-                name: organizerName,
-                organizerTimezone,
-                recipientTimezone: organizerTimezone,
-                meetingTitle: data.title,
-                meetingLink: data.meetingLink,
-                time: bestSlot,
-                duration,
-                link: `${window.location.origin}/polls/${pollId}/results`,
-                multiSlotConfirmation: false,
-                voterNames,
-                cancellerNames,
-                pollId,
-              }),
-            });
-
-            for (const invitee of data.invitees || []) {
-              const email = invitee.email?.trim().toLowerCase();
-              if (!email) {
-                console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
-                continue;
-              }
-              
-
-              
-              
-              const name = invitee.firstName || 'there';
-              const inviteeTimezone = invitee?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-              console.log("⏱️ Invitee timezone:", invitee?.email, invitee?.timezone, inviteeTimezone);
-
-              await fetch(`${location.origin}/api/send-all-finalizations`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  to: email,
-                  name,
-                  time: bestSlot,
-                  duration,
-                  recipientTimezone: inviteeTimezone,
-                  organizerName,
-                  link: `${window.location.origin}/polls/${pollId}/results`,
-                  meetingLink: data.meetingLink,
-                  meetingTitle: data.title,
-                  slotIndex: 1,
-                  totalSlots: 1,
-                  multiSlotConfirmation: false,
-                }),
-              });
-              await new Promise((resolve) => setTimeout(resolve, 500));
-            }
-            setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
-          }
-        }
       } catch (err) {
         console.warn('❌ Error sending emails:', err);
       }
     };
 
-
-
-    
     fetchPoll();
     const interval = setInterval(fetchPoll, 10000);
     return () => clearInterval(interval);
