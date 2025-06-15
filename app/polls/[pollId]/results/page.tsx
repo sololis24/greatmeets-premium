@@ -301,6 +301,8 @@ try {
     }
   }
   
+
+
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(pollRef);
@@ -347,13 +349,23 @@ try {
         console.log('📤 Organizer email sent. Status:', res.status, await res.text());
       }
   
-      // ✅ Updated invitee logic: send to those who actually voted
+      // ✅ Build votedEmails from votesArray or fallback to votes object
+      const rawVotes =
+      data.votesArray ||
+      Object.entries(data.votes || {}).map(([email, voteObj]: [string, any]) => {
+        const timeSlots = Array.isArray(voteObj?.timeSlots) ? voteObj.timeSlots : [];
+        return { email, timeSlots };
+      });
+      
       const votedEmails = new Set(
-        (data.votesArray || [])
-          .filter((v: any) => v.email && v.timeSlots?.includes(bestSlot))
+        rawVotes
+          .filter((v: any) => v.email && v.timeSlots.includes(bestSlot))
           .map((v: any) => v.email.trim().toLowerCase())
       );
   
+      console.log('✅ Voted emails for bestSlot:', [...votedEmails]);
+  
+      // ✅ Invitee loop
       for (const invitee of data.invitees || []) {
         const email = invitee.email?.trim().toLowerCase();
         if (!email || !email.includes('@')) {
