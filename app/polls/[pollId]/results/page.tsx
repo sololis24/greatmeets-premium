@@ -349,32 +349,11 @@ try {
         console.log('📤 Organizer email sent. Status:', res.status, await res.text());
       }
   
-      // ✅ Build votedEmails from votesArray or fallback to votes object
-      const rawVotes =
-      data.votesArray ||
-      Object.entries(data.votes || {}).map(([email, voteObj]: [string, any]) => {
-        const timeSlots = Array.isArray(voteObj?.timeSlots) ? voteObj.timeSlots : [];
-        return { email, timeSlots };
-      });
-      
-      const votedEmails = new Set(
-        rawVotes
-          .filter((v: any) => v.email && v.timeSlots.includes(bestSlot))
-          .map((v: any) => v.email.trim().toLowerCase())
-      );
-  
-      console.log('✅ Voted emails for bestSlot:', [...votedEmails]);
-  
-      // ✅ Invitee loop
+      // ✅ Invitee logic (send to all valid invitees)
       for (const invitee of data.invitees || []) {
         const email = invitee.email?.trim().toLowerCase();
         if (!email || !email.includes('@')) {
           console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
-          continue;
-        }
-  
-        if (!votedEmails.has(email)) {
-          console.log(`⏩ Skipping ${email} because they did not vote for this slot.`);
           continue;
         }
   
