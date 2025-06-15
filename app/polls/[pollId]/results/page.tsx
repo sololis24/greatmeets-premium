@@ -301,7 +301,6 @@ try {
     }
   }
   
-
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(pollRef);
@@ -348,11 +347,22 @@ try {
         console.log('📤 Organizer email sent. Status:', res.status, await res.text());
       }
   
-      // ✅ Updated invitee logic
+      // ✅ Updated invitee logic: send to those who actually voted
+      const votedEmails = new Set(
+        (data.votesArray || [])
+          .filter((v: any) => v.email && v.timeSlots?.includes(bestSlot))
+          .map((v: any) => v.email.trim().toLowerCase())
+      );
+  
       for (const invitee of data.invitees || []) {
         const email = invitee.email?.trim().toLowerCase();
         if (!email || !email.includes('@')) {
           console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
+          continue;
+        }
+  
+        if (!votedEmails.has(email)) {
+          console.log(`⏩ Skipping ${email} because they did not vote for this slot.`);
           continue;
         }
   
@@ -405,6 +415,7 @@ try {
       console.log('⏩ Single slot was already finalized. Skipping emails.');
     }
   }
+  
   
   
   
