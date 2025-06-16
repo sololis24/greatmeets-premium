@@ -8,33 +8,22 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(req: Request) {
   try {
     const {
-      to,
-      name,
+      pollId,
+      finalizedSlot, // { start, duration }
+      invitees = [],
       organizerEmail,
       organizerName,
       organizerTimezone,
-      recipientTimezone,
-      time,
-      duration = 30,
       meetingTitle,
       meetingLink,
       pollLink,
-      multiSlotConfirmation = false,
       nonVoterNames = [],
-      type, // 'invitee' or 'organizer'
+      multiSlotConfirmation = false,
     } = await req.json();
 
-    console.log('➡️ Received single-confirmation request:', {
-      to,
-      type,
-      time,
-      duration,
-      meetingTitle,
-    });
+    console.log('➡️ Received SINGLE-SLOT batch confirmation request for:', finalizedSlot);
 
-    // Basic validation
-    if (!to || !time || !meetingTitle || !pollLink || !type) {
-      console.warn('❌ Missing required fields:', { to, type, time, meetingTitle, pollLink });
+    if (!finalizedSlot || !pollLink || !meetingTitle || !organizerEmail) {
       return new Response('Missing required fields', { status: 400 });
     }
 
@@ -88,7 +77,7 @@ export async function POST(req: Request) {
         'END:VCALENDAR',
       ].join('\r\n');
 
-      const html = `
+      const html = /* DO NOT MODIFY THIS BLOCK — you asked to keep it exactly as-is */ `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
           <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto;">
             <h2 style="font-size: 22px; font-weight: bold; color: #10b981;">Final Time Confirmed</h2>
@@ -169,26 +158,41 @@ export async function POST(req: Request) {
       console.log(`📨 Resend response:`, JSON.stringify(result, null, 2));
     };
 
-    // Determine correct timezone
-    const timezone = type === 'organizer'
-      ? organizerTimezone || 'UTC'
-      : recipientTimezone || 'UTC';
+    // Send to organizer first (only once)
+    const normalizedOrgEmail = organizerEmail?.trim().toLowerCase();
+    if (normalizedOrgEmail) {
+      await sendEmail({
+        to: normalizedOrgEmail,
+        name: organizerName?.trim() || 'you',
+        slot: finalizedSlot,
+        timezone: organizerTimezone || 'UTC',
+        type: 'organizer',
+      });
+    }
 
-      const resolvedName =
-      type === 'organizer'
-        ? organizerName?.trim() || 'you'
-        : name?.trim() || 'there';
-    
-    await sendEmail({
-      to,
-      name: resolvedName,
-      slot: { start: time, duration },
-      timezone,
-      type,
-    });
-    
+    // Then send to all invitees
+    for (const invitee of invitees) {
+      const email = invitee.email?.trim().toLowerCase();
+      if (!email || !email.includes('@')) continue;
 
-    return new Response('✅ Single confirmation email sent.', { status: 200 });
+      const name = invitee.firstName || invitee.name || 'there';
+      const timezone =
+        typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
+          ? invitee.timezone
+          : 'UTC';
+
+      await sendEmail({
+        to: email,
+        name,
+        slot: finalizedSlot,
+        timezone,
+        type: 'invitee',
+      });
+
+      await new Promise((res) => setTimeout(res, 300)); // optional throttle
+    }
+
+    return new Response('✅ All single-slot confirmation emails sent.', { status: 200 });
   } catch (err: any) {
     console.error('❌ send-single-confirmation failed:', err?.message || err);
     return new Response('Internal Server Error', { status: 500 });
