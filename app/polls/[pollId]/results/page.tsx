@@ -302,7 +302,6 @@ try {
   }
   
 
-
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(pollRef);
@@ -320,14 +319,16 @@ try {
   
       const slot = data.timeSlots.find((s: any) => s.start === bestSlot);
       const duration = slot?.duration || 30;
-      const pollLink = `${window.location.origin}/polls/${pollId}/results`;
+      const pollLink = `${typeof window !== 'undefined' ? window.location.origin : 'https://app.greatmeets.ai'}/polls/${pollId}/results`;
+  
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.greatmeets.ai';
   
       const organizerEmail = data.organizerEmail?.trim().toLowerCase();
       const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   
       // ✅ Send to organizer
       if (organizerEmail) {
-        const res = await fetch(`${location.origin}/api/send-single-confirmation`, {
+        const res = await fetch(`${baseUrl}/api/send-single-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -349,63 +350,68 @@ try {
         console.log('📤 Organizer email sent. Status:', res.status, await res.text());
       }
   
-      // ✅ Invitee logic (send to all valid invitees)
-      for (const invitee of data.invitees || []) {
-        const email = invitee.email?.trim().toLowerCase();
-        if (!email || !email.includes('@')) {
-          console.warn('❌ Invitee email missing or invalid. Skipping:', invitee);
-          continue;
-        }
-  
-        const name = invitee.firstName || invitee.name || 'there';
-        const inviteeTimezone =
-          typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
-            ? invitee.timezone
-            : Intl.DateTimeFormat().resolvedOptions().timeZone;
-  
-        const payload = {
-          type: 'invitee',
-          to: email,
-          name,
-          time: bestSlot,
-          duration,
-          recipientTimezone: inviteeTimezone,
-          organizerName,
-          pollLink,
-          meetingLink: data.meetingLink,
-          meetingTitle: data.title,
-          slotIndex: 1,
-          totalSlots: 1,
-          multiSlotConfirmation: false,
-        };
-  
-        console.log(`📨 Sending invitee confirmation to ${email} with payload:`, payload);
-  
-        try {
-          const res = await fetch(`${location.origin}/api/send-single-confirmation`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-  
-          const text = await res.text();
-          console.log(`📤 Invitee email sent to ${email}. Status: ${res.status}. Response: ${text}`);
-  
-          if (!res.ok) {
-            console.warn(`⚠️ Invitee email failed: ${email} — ${res.status} ${text}`);
+      // ✅ Send to each invitee
+      if (Array.isArray(data.invitees)) {
+        for (const invitee of data.invitees) {
+          const email = invitee.email?.trim().toLowerCase();
+          if (!email || !email.includes('@')) {
+            console.warn('❌ Skipping invitee with invalid email:', invitee);
+            continue;
           }
-        } catch (err: any) {
-          console.error(`❌ Invitee email error for ${email}:`, err?.message || err);
-        }
   
-        await new Promise((resolve) => setTimeout(resolve, 500));
+          const name = invitee.firstName || invitee.name || 'there';
+          const inviteeTimezone =
+            typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
+              ? invitee.timezone
+              : Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+          const payload = {
+            type: 'invitee',
+            to: email,
+            name,
+            time: bestSlot,
+            duration,
+            recipientTimezone: inviteeTimezone,
+            organizerName,
+            pollLink,
+            meetingLink: data.meetingLink,
+            meetingTitle: data.title,
+            slotIndex: 1,
+            totalSlots: 1,
+            multiSlotConfirmation: false,
+          };
+  
+          console.log(`📨 Sending invitee confirmation to ${email}`, payload);
+  
+          try {
+            const res = await fetch(`${baseUrl}/api/send-single-confirmation`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+  
+            const text = await res.text();
+            console.log(`📤 Invitee email sent to ${email}. Status: ${res.status}. Response: ${text}`);
+  
+            if (!res.ok) {
+              console.warn(`⚠️ Invitee email failed: ${email} — ${res.status} ${text}`);
+            }
+          } catch (err: any) {
+            console.error(`❌ Invitee email error for ${email}:`, err?.message || err);
+          }
+  
+          await new Promise((resolve) => setTimeout(resolve, 500)); // rate limit
+        }
+      } else {
+        console.warn('⚠️ No invitees array found in data:', data);
       }
   
       setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
     } else {
-      console.log('⏩ Single slot was already finalized. Skipping emails.');
+      console.log('⏩ Single slot already finalized, skipping email send.');
     }
   }
+  
   
   
   

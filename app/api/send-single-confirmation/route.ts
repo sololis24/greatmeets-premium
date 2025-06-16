@@ -93,7 +93,7 @@ export async function POST(req: Request) {
           <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto;">
             <h2 style="font-size: 22px; font-weight: bold; color: #10b981;">Final Time Confirmed</h2>
             <p style="font-size: 16px; color: #333;">
-              Hey ${name} 👋<br />
+               Hey ${name} 👋<br />
               You're all set! The time for your Great Meet with <strong>${formattedOrganizer}</strong> has been confirmed.
             </p>
             <p style="font-size: 20px; margin: 20px 0 10px; font-weight: bold; color: #111;">
@@ -174,13 +174,19 @@ export async function POST(req: Request) {
       ? organizerTimezone || 'UTC'
       : recipientTimezone || 'UTC';
 
+      const resolvedName =
+      type === 'organizer'
+        ? organizerName?.trim() || 'you'
+        : name?.trim() || 'there';
+    
     await sendEmail({
       to,
-      name,
+      name: resolvedName,
       slot: { start: time, duration },
       timezone,
       type,
     });
+    
 
     return new Response('✅ Single confirmation email sent.', { status: 200 });
   } catch (err: any) {
