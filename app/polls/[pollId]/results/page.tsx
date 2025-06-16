@@ -302,7 +302,7 @@ try {
   }
   
 
-
+  
 
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
@@ -317,107 +317,53 @@ try {
       return true;
     });
   
-    console.log(finalized ? '✅ Finalizing single slot:' : '⏩ Already finalized. Sending emails anyway:', bestSlot);
-  
     const slot = data.timeSlots.find((s: any) => s.start === bestSlot);
     const duration = slot?.duration || 30;
+  
+    if (!slot) {
+      console.warn(`⚠️ No slot found for bestSlot: ${bestSlot}`);
+      return;
+    }
+  
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.greatmeets.ai';
     const pollLink = `${baseUrl}/polls/${pollId}/results`;
-    const organizerEmail = data.organizerEmail?.trim().toLowerCase();
-    const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const nonVoterNames = nonVoters.map((i: Invitee) => i.firstName || i.name || i.email || 'Unnamed');
   
-    // ✅ Send to organizer if newly finalized
-    if (finalized && organizerEmail) {
-      try {
-        const res = await fetch(`${baseUrl}/api/send-single-confirmation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'organizer',
-            to: organizerEmail,
-            name: 'Organizer',
-            organizerName,
-            organizerTimezone,
-            recipientTimezone: organizerTimezone,
-            time: bestSlot,
-            duration,
-            meetingTitle: data.title,
-            meetingLink: data.meetingLink,
-            pollLink,
-            multiSlotConfirmation: false,
-            nonVoterNames: nonVoters.map((i: any) => i.firstName || i.name || i.email || 'Unnamed'),
-          }),
-        });
-        console.log('📤 Organizer email sent. Status:', res.status, await res.text());
-      } catch (err: any) {
-        console.error(`❌ Organizer email error:`, err?.message || err);
-      }
-    }
+    console.log('📡 Calling send-single-confirmation with:', {
+      pollId,
+      finalizedSlot: { start: slot.start, duration },
+      organizerEmail: data.organizerEmail,
+      inviteeCount: data.invitees?.length,
+    });
   
-    // ✅ Always send to each invitee
-    const invitees = Array.isArray(data.invitees) ? data.invitees : [];
-    const inviteeEmailPromises: Promise<void>[] = [];
-  
-    for (const invitee of invitees) {
-      const email = invitee.email?.trim().toLowerCase();
-      if (!email || !email.includes('@')) {
-        console.warn('❌ Invalid invitee email, skipping:', invitee);
-        continue;
-      }
-  
-      const name = invitee.firstName || invitee.name || 'there';
-      const inviteeTimezone =
-        typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
-          ? invitee.timezone
-          : Intl.DateTimeFormat().resolvedOptions().timeZone;
-  
-      const payload = {
-        type: 'invitee',
-        to: email,
-        name,
-        time: bestSlot,
-        duration,
-        recipientTimezone: inviteeTimezone,
+    const sendRes = await fetch(`${baseUrl}/api/send-single-confirmation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pollId,
+        invitees: data.invitees || [],
+        organizerEmail: data.organizerEmail,
         organizerName,
-        pollLink,
-        meetingLink: data.meetingLink,
+        organizerTimezone: data.organizerTimezone,
+        finalizedSlot: { start: slot.start, duration },
         meetingTitle: data.title,
-        slotIndex: 1,
-        totalSlots: 1,
+        meetingLink: data.meetingLink,
+        pollLink,
+        nonVoterNames,
         multiSlotConfirmation: false,
-      };
+      }),
+    });
   
-      console.log(`📨 Queueing invitee confirmation to ${email}`, payload);
-  
-      const emailPromise = fetch(`${baseUrl}/api/send-single-confirmation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-        .then(async (res) => {
-          const text = await res.text();
-          console.log(`📤 Invitee email sent to ${email}. Status: ${res.status}. Response: ${text}`);
-          if (!res.ok) {
-            console.warn(`⚠️ Invitee email failed: ${email} — ${res.status} ${text}`);
-          }
-        })
-        .catch((err) => {
-          console.error(`❌ Invitee email error for ${email}:`, err?.message || err);
-        });
-  
-      inviteeEmailPromises.push(emailPromise);
-  
-      // Optional delay to avoid rate-limiting backend
-      await new Promise((resolve) => setTimeout(resolve, 250));
+    if (!sendRes.ok) {
+      const errorText = await sendRes.text();
+      console.error('❌ Failed to send single-slot confirmation emails:', errorText);
+    } else {
+      console.log('✅ Single-slot confirmation emails sent successfully.');
+      setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
     }
-  
-    // ✅ Await all email sends
-    await Promise.all(inviteeEmailPromises);
-    console.log('✅ All invitee emails attempted.');
-  
-    // ✅ Mark slot as sent to prevent future duplicate sends
-    setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
   }
+  
+  
   
   
   
