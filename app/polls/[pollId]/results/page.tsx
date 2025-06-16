@@ -302,6 +302,8 @@ try {
   }
   
 
+
+
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(pollRef);
@@ -354,7 +356,9 @@ try {
   
     // ✅ Always send to each invitee
     const invitees = Array.isArray(data.invitees) ? data.invitees : [];
-    for (const [i, invitee] of invitees.entries()) {
+    const inviteeEmailPromises: Promise<void>[] = [];
+  
+    for (const invitee of invitees) {
       const email = invitee.email?.trim().toLowerCase();
       if (!email || !email.includes('@')) {
         console.warn('❌ Invalid invitee email, skipping:', invitee);
@@ -383,30 +387,38 @@ try {
         multiSlotConfirmation: false,
       };
   
-      console.log(`📨 Sending invitee confirmation to ${email}`, payload);
+      console.log(`📨 Queueing invitee confirmation to ${email}`, payload);
   
-      try {
-        const res = await fetch(`${baseUrl}/api/send-single-confirmation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+      const emailPromise = fetch(`${baseUrl}/api/send-single-confirmation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then(async (res) => {
+          const text = await res.text();
+          console.log(`📤 Invitee email sent to ${email}. Status: ${res.status}. Response: ${text}`);
+          if (!res.ok) {
+            console.warn(`⚠️ Invitee email failed: ${email} — ${res.status} ${text}`);
+          }
+        })
+        .catch((err) => {
+          console.error(`❌ Invitee email error for ${email}:`, err?.message || err);
         });
-        const text = await res.text();
-        console.log(`📤 Invitee email sent to ${email}. Status: ${res.status}. Response: ${text}`);
-        if (!res.ok) {
-          console.warn(`⚠️ Invitee email failed: ${email} — ${res.status} ${text}`);
-        }
-      } catch (err: any) {
-        console.error(`❌ Invitee email error for ${email}:`, err?.message || err);
-      }
   
-      // ✅ Rate limit per email to avoid burst issues
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      inviteeEmailPromises.push(emailPromise);
+  
+      // Optional delay to avoid rate-limiting backend
+      await new Promise((resolve) => setTimeout(resolve, 250));
     }
+  
+    // ✅ Await all email sends
+    await Promise.all(inviteeEmailPromises);
+    console.log('✅ All invitee emails attempted.');
   
     // ✅ Mark slot as sent to prevent future duplicate sends
     setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
   }
+  
   
   
   
