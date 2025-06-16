@@ -118,9 +118,10 @@ export async function POST(req: Request) {
             ${meetingTitle ? `<h2 style="font-size: 20px; color: #4f46e5;">${meetingTitle}</h2>` : ''}
             <p style="font-size: 15px;">${participantFormattedTimes.join('<br/>')}</p>
             ${participantFormattedDeadline ? `<p style="font-size: 14px; color: #999;">Vote by: <strong>${participantFormattedDeadline}</strong></p>` : ''}
-            <a href="${inviteLink}" style="background-image: linear-gradient(90deg, #34d399, #4f46e5); color: white; padding: 12px 24px; border-radius: 6px; display: inline-block; margin-top: 20px; text-decoration: none;">
-              Vote Now
-            </a>
+            <a href="${inviteLink}" style="background-color: #4f46e5; background-image: linear-gradient(90deg, #34d399, #4f46e5); color: white; padding: 12px 24px; border-radius: 6px; display: inline-block; margin-top: 20px; text-decoration: none;">
+  Vote Now
+</a>
+
           </div>
         </div>
       `;
