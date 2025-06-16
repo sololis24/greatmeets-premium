@@ -302,7 +302,6 @@ try {
   }
   
 
-
   if (allInviteesVoted && shouldSendSingle) {
     const finalized = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(pollRef);
@@ -325,7 +324,7 @@ try {
     const organizerEmail = data.organizerEmail?.trim().toLowerCase();
     const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   
-    // ✅ Only send to organizer if this is a new finalization
+    // ✅ Send to organizer if newly finalized
     if (finalized && organizerEmail) {
       try {
         const res = await fetch(`${baseUrl}/api/send-single-confirmation`, {
@@ -353,8 +352,9 @@ try {
       }
     }
   
-    // ✅ Always send to all invitees
-    for (const invitee of data.invitees || []) {
+    // ✅ Always send to each invitee
+    const invitees = Array.isArray(data.invitees) ? data.invitees : [];
+    for (const [i, invitee] of invitees.entries()) {
       const email = invitee.email?.trim().toLowerCase();
       if (!email || !email.includes('@')) {
         console.warn('❌ Invalid invitee email, skipping:', invitee);
@@ -393,15 +393,18 @@ try {
         });
         const text = await res.text();
         console.log(`📤 Invitee email sent to ${email}. Status: ${res.status}. Response: ${text}`);
-        if (!res.ok) console.warn(`⚠️ Invitee email failed: ${email} — ${res.status} ${text}`);
+        if (!res.ok) {
+          console.warn(`⚠️ Invitee email failed: ${email} — ${res.status} ${text}`);
+        }
       } catch (err: any) {
         console.error(`❌ Invitee email error for ${email}:`, err?.message || err);
       }
   
-      await new Promise((resolve) => setTimeout(resolve, 500)); // rate-limit
+      // ✅ Rate limit per email to avoid burst issues
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
   
-    // ✅ Update slot cache after all invitee emails
+    // ✅ Mark slot as sent to prevent future duplicate sends
     setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
   }
   
