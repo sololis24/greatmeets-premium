@@ -94,7 +94,7 @@ export async function POST(req: Request) {
             <h2 style="font-size: 22px; font-weight: bold; color: #10b981;">Final Time Confirmed</h2>
             <p style="font-size: 16px; color: #333;">
                Hey ${name} 👋<br />
-              You're all set! The time for your Great Meet with <strong>${formattedOrganizer}</strong> has been confirmed.
+              You're all set! The time for your Great Meet has been confirmed.
             </p>
             <p style="font-size: 20px; margin: 20px 0 10px; font-weight: bold; color: #111;">
               ${timeRange}

@@ -322,35 +322,38 @@ try {
     const duration = slot?.duration || 30;
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.greatmeets.ai';
     const pollLink = `${baseUrl}/polls/${pollId}/results`;
-  
     const organizerEmail = data.organizerEmail?.trim().toLowerCase();
     const organizerTimezone = data.organizerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   
-    // ✅ Always send to organizer
-    if (organizerEmail) {
-      const res = await fetch(`${baseUrl}/api/send-single-confirmation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'organizer',
-          to: organizerEmail,
-          name: 'Organizer',
-          organizerName,
-          organizerTimezone,
-          recipientTimezone: organizerTimezone,
-          time: bestSlot,
-          duration,
-          meetingTitle: data.title,
-          meetingLink: data.meetingLink,
-          pollLink,
-          multiSlotConfirmation: false,
-          nonVoterNames: nonVoters.map((i: any) => i.firstName || i.name || i.email || 'Unnamed'),
-        }),
-      });
-      console.log('📤 Organizer email sent. Status:', res.status, await res.text());
+    // ✅ Only send to organizer if this is a new finalization
+    if (finalized && organizerEmail) {
+      try {
+        const res = await fetch(`${baseUrl}/api/send-single-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'organizer',
+            to: organizerEmail,
+            name: 'Organizer',
+            organizerName,
+            organizerTimezone,
+            recipientTimezone: organizerTimezone,
+            time: bestSlot,
+            duration,
+            meetingTitle: data.title,
+            meetingLink: data.meetingLink,
+            pollLink,
+            multiSlotConfirmation: false,
+            nonVoterNames: nonVoters.map((i: any) => i.firstName || i.name || i.email || 'Unnamed'),
+          }),
+        });
+        console.log('📤 Organizer email sent. Status:', res.status, await res.text());
+      } catch (err: any) {
+        console.error(`❌ Organizer email error:`, err?.message || err);
+      }
     }
   
-    // ✅ Send to all invitees regardless of finalization flag
+    // ✅ Always send to all invitees
     for (const invitee of data.invitees || []) {
       const email = invitee.email?.trim().toLowerCase();
       if (!email || !email.includes('@')) {
@@ -398,9 +401,10 @@ try {
       await new Promise((resolve) => setTimeout(resolve, 500)); // rate-limit
     }
   
-    // ✅ Update cache only after all emails
+    // ✅ Update slot cache after all invitee emails
     setSentSlotCache(new Set([...sentSlotCache, bestSlot]));
   }
+  
   
   
 
