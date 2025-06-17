@@ -18,7 +18,7 @@ type OrganizerFormProps = {
   organizerErrors: Record<string, string>;
   isPro: boolean;
   trialStartedAt?: string;
-  shakeCount: number; // ✅ Add this prop
+  shakeCount: number;
 };
 
 function isValidEmail(email: string): boolean {
@@ -41,7 +41,7 @@ export default function OrganizerForm({
   organizerErrors,
   isPro,
   trialStartedAt,
-  shakeCount, // ✅ Receive here
+  shakeCount,
 }: OrganizerFormProps) {
   const router = useRouter();
   const [hasBlurred, setHasBlurred] = useState(false);
@@ -52,32 +52,43 @@ export default function OrganizerForm({
   const isEmailValid = isValidEmail(organizerEmail);
   const shouldShowEmailError = !!organizerEmail && !isEmailValid && hasBlurred;
 
+  const trialDaysLeft = (() => {
+    if (!trialStartedAt || isPro) return null;
+    const start = new Date(trialStartedAt);
+    const now = new Date();
+    const daysUsed = Math.floor(
+      (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return Math.max(0, 7 - daysUsed);
+  })();
+
   return (
     <div className="space-y-6 text-base">
       <div className="flex justify-between items-start mb-6">
         <div />
         <div className="flex flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
-          <Link
-            href="/upgrade"
-            aria-label="Upgrade to Pro"
-            className="inline-flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-purple-500 via-violet-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-full shadow-md transition-all duration-300 w-full sm:w-auto"
-          >
-            <Crown className="h-4 w-4 text-yellow-300" />
-            Upgrade to Pro
-          </Link>
-
-          {!isPro && trialStartedAt && (
-            <div className="text-xs font-medium text-indigo-700 bg-indigo-100 rounded-full px-3 py-1 shadow-sm w-fit mx-auto sm:ml-auto text-center">
-              ⏳ {(() => {
-                const start = new Date(trialStartedAt);
-                const now = new Date();
-                const daysUsed = Math.floor(
-                  (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-                );
-                const daysLeft = Math.max(0, 7 - daysUsed);
-                return `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left in your trial`;
-              })()}
+          {isPro ? (
+            <div className="inline-flex items-center gap-2 text-sm bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium py-2 px-4 rounded-full shadow-md">
+              <Crown className="w-4 h-4 text-yellow-300" />
+              Pro
             </div>
+          ) : (
+            <>
+              <Link
+                href="/upgrade"
+                aria-label="Upgrade to Pro"
+                className="inline-flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-purple-500 via-violet-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-full shadow-md transition-all duration-300 w-full sm:w-auto"
+              >
+                <Crown className="h-4 w-4 text-yellow-300" />
+                Upgrade to Pro
+              </Link>
+
+              {trialDaysLeft !== null && (
+                <div className="text-xs font-medium text-indigo-700 bg-indigo-100 rounded-full px-3 py-1 shadow-sm w-fit mx-auto sm:ml-auto text-center">
+                  ⏳ {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''} left in your trial
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -144,7 +155,7 @@ export default function OrganizerForm({
       </div>
 
       <motion.div
-        key={shakeCount} // 🔁 re-triggers animation on prop change
+        key={shakeCount}
         animate={
           hasBlurred && (organizerErrors.email || shouldShowEmailError)
             ? { x: [0, -12, 12, -12, 0] }

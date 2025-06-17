@@ -14,6 +14,10 @@ export default function ProSuccessPage() {
     localStorage.setItem('isPro', 'true');
     localStorage.setItem('justUpgraded', 'true');
 
+      // ✅ Trigger custom event to update state in current tab
+ window.dispatchEvent(new CustomEvent('isProUpdate', { detail: true }));
+
+
     const fetchStripeCustomerId = async () => {
       const email = localStorage.getItem('participantEmail');
       if (!email) return;

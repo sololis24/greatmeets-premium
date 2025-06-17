@@ -1,27 +1,42 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase/firebaseConfig'; // ✅ match your export
 
 export function useIsPro(): boolean | null {
   const [isPro, setIsPro] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+    if (typeof window === 'undefined') return;
+
+    const updateIsPro = () => {
+      const stored = localStorage.getItem('isPro');
+      if (stored === 'true') {
+        setIsPro(true);
+      } else if (stored === 'false') {
         setIsPro(false);
-        return;
+      } else {
+        setIsPro(null);
       }
+    };
 
-      const userDoc = doc(db, 'users', user.uid);
-      const snap = await getDoc(userDoc);
+    updateIsPro(); // ✅ Initial read
 
-      setIsPro(snap.exists() ? !!snap.data().isPro : false);
-    });
+    const handleStorage = () => updateIsPro();
+    const handleCustom = (e: Event) => {
+      if ('detail' in e && typeof (e as CustomEvent).detail === 'boolean') {
+        setIsPro((e as CustomEvent).detail);
+      } else {
+        updateIsPro();
+      }
+    };
 
-    return () => unsubscribe();
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('isProUpdate', handleCustom);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('isProUpdate', handleCustom);
+    };
   }, []);
 
   return isPro;

@@ -3,8 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Crown } from 'lucide-react';
-import { useIsPro } from '../components/isPro'; // adjust if needed
+import { useIsPro } from '../components/isPro';
 import { useEffect, useState } from 'react';
+import { getTrialDaysRemaining } from '../app/utils/isTrialActive';
 
 export default function UpgradeToPro() {
   const router = useRouter();
@@ -12,19 +13,8 @@ export default function UpgradeToPro() {
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    const startedAt = localStorage.getItem('trialStartedAt');
-    if (!startedAt) return;
-
-    try {
-      const start = new Date(startedAt);
-      const now = new Date();
-      const diff = now.getTime() - start.getTime();
-      const daysRemaining = 7 - Math.floor(diff / (1000 * 60 * 60 * 24));
-      setDaysLeft(daysRemaining < 0 ? 0 : daysRemaining);
-    } catch (err) {
-      console.error('❌ Failed to parse trialStartedAt:', err);
-      setDaysLeft(null);
-    }
+    const days = getTrialDaysRemaining();
+    setDaysLeft(days);
   }, []);
 
   if (isPro === null) {
@@ -71,6 +61,8 @@ export default function UpgradeToPro() {
         <Crown className="w-4 h-4 text-yellow-300" />
         Upgrade to Pro
       </motion.button>
+
+      {/* 🟣 Only show trial countdown if user is not Pro */}
       {daysLeft !== null && (
         <span className="text-xs text-blue-800 bg-blue-100 px-3 py-0.5 rounded-full">
           ⏳ {daysLeft} day{daysLeft !== 1 ? 's' : ''} left in your trial

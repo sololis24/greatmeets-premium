@@ -94,20 +94,6 @@ useEffect(() => {
 }, [justGeneratedMeetingLink]);
 
 useEffect(() => {
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('isPro');
-    if (stored === 'true') {
-      setIsPro(true);
-    } else if (stored === 'false') {
-      setIsPro(false);
-    } else {
-      setIsPro(null); // or false if you want to default show the Upgrade button
-    }
-  }
-}, []);
-
-
-useEffect(() => {
   if (localStorage.getItem('justUpgraded') === 'true') {
     setShowToast(true);
     localStorage.removeItem('justUpgraded');
@@ -174,16 +160,35 @@ useEffect(() => {
       sessionStorage.setItem('newSession', 'true');
     }
   }, []);
-  
-  useEffect(() => {
-    if (organizerEmail) {
-      fetch('/api/init-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: organizerEmail }),
+ useEffect(() => {
+  if (organizerEmail) {
+    fetch('/api/init-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: organizerEmail }),
+    })
+      .then(() => {
+        return fetch('/api/get-user-access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: organizerEmail }),
+        });
+      })
+      .then(res => res.json())
+      .then(({ isPro }) => {
+        localStorage.setItem('isPro', isPro ? 'true' : 'false');
+
+        // ✅ Simulate reactive update for same-tab state (useIsPro)
+        const event = new CustomEvent('isProUpdate', { detail: isPro });
+        window.dispatchEvent(event);
+      })
+      .catch(err => {
+        console.error('❌ Failed to sync isPro status:', err);
       });
-    }
-  }, [organizerEmail]);
+  }
+}, [organizerEmail]);
+
+
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
