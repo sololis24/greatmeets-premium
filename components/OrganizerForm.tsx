@@ -1,10 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Crown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { syncProStatusFromFirestore } from '../app/utils/syncProStatus';
+
+
+
 
 type OrganizerFormProps = {
   title: string;
@@ -52,6 +56,20 @@ export default function OrganizerForm({
   const isEmailValid = isValidEmail(organizerEmail);
   const shouldShowEmailError = !!organizerEmail && !isEmailValid && hasBlurred;
 
+  // ✅ sync logic here
+  useEffect(() => {
+    if (!isEmailValid) return;
+
+    localStorage.setItem('participantEmail', organizerEmail);
+
+    const alreadyChecked = sessionStorage.getItem('proChecked');
+    if (!alreadyChecked) {
+      syncProStatusFromFirestore().then(() => {
+        sessionStorage.setItem('proChecked', 'true');
+      });
+    }
+  }, [organizerEmail, isEmailValid]);
+
   const trialDaysLeft = (() => {
     if (!trialStartedAt || isPro) return null;
     const start = new Date(trialStartedAt);
@@ -62,16 +80,16 @@ export default function OrganizerForm({
     return Math.max(0, 7 - daysUsed);
   })();
 
-  return (
-    <div className="space-y-6 text-base">
-      <div className="flex justify-between items-start mb-6">
-        <div />
-        <div className="flex flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
-          {isPro ? (
-            <div className="inline-flex items-center gap-2 text-sm bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium py-2 px-4 rounded-full shadow-md">
-              <Crown className="w-4 h-4 text-yellow-300" />
-              Pro
-            </div>
+ return (
+  <div className="space-y-6 text-base">
+    <div className="flex justify-between items-start mb-6">
+      <div />
+      <div className="flex flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
+        {isPro ? (
+          <div className="inline-flex items-center gap-2 text-sm bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-full shadow-md">
+            <Crown className="w-4 h-4 text-yellow-300" />
+            Pro
+          </div>
           ) : (
             <>
               <Link

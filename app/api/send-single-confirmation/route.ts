@@ -158,19 +158,26 @@ export async function POST(req: Request) {
       console.log(`📨 Resend response:`, JSON.stringify(result, null, 2));
     };
 
-    // Send to organizer first (only once)
+    // Organizer (with resolved timezone)
     const normalizedOrgEmail = organizerEmail?.trim().toLowerCase();
+    const resolvedOrgTz =
+      typeof organizerTimezone === 'string' && organizerTimezone.includes('/')
+        ? organizerTimezone
+        : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+    console.log(`Organizer TZ input: ${organizerTimezone}, resolved: ${resolvedOrgTz}`);
+
     if (normalizedOrgEmail) {
       await sendEmail({
         to: normalizedOrgEmail,
         name: organizerName?.trim() || 'you',
         slot: finalizedSlot,
-        timezone: organizerTimezone || 'UTC',
+        timezone: resolvedOrgTz,
         type: 'organizer',
       });
     }
 
-    // Then send to all invitees
+    // Invitees
     for (const invitee of invitees) {
       const email = invitee.email?.trim().toLowerCase();
       if (!email || !email.includes('@')) continue;
@@ -189,7 +196,7 @@ export async function POST(req: Request) {
         type: 'invitee',
       });
 
-      await new Promise((res) => setTimeout(res, 300)); // optional throttle
+      await new Promise((res) => setTimeout(res, 300));
     }
 
     return new Response('✅ All single-slot confirmation emails sent.', { status: 200 });

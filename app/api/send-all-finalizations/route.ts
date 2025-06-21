@@ -93,9 +93,7 @@ export async function POST(req: Request) {
           <p style="font-size: 20px; margin: 20px 0 10px; font-weight: bold; color: #111;">
             ${timeRange}
           </p>
-      
           <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;" />
-      
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 32px auto; text-align: center;">
             <tr>
               ${
@@ -115,9 +113,7 @@ export async function POST(req: Request) {
               </td>
             </tr>
           </table>
-      
           <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;" />
-      
           <a href="${pollLink}" 
              style="background-color: #0047AB; 
                     background-image: linear-gradient(90deg, #f59e0b, #6366f1); 
@@ -130,7 +126,6 @@ export async function POST(req: Request) {
                     font-weight: 600;">
             View Final Poll
           </a>
-      
           ${
             type === 'organizer' && nonVoterNames.length > 0
               ? `<p style="font-size: 15px; color: #b91c1c; margin-top: 20px;">
@@ -138,13 +133,12 @@ export async function POST(req: Request) {
                 </p>`
               : ''
           }
-      
           <p style="font-size: 14px; color: #666666; margin-top: 30px;">
             Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.
           </p>
         </div>
       </div>`;
-      
+
       const result = await resend.emails.send({
         from: 'Great Meets <noreply@greatmeets.ai>',
         to,
@@ -182,7 +176,14 @@ export async function POST(req: Request) {
       }
     }
 
-    // Organizer
+    // Organizer (updated logic)
+    const resolvedTz =
+      typeof organizerTimezone === 'string' && organizerTimezone.includes('/')
+        ? organizerTimezone
+        : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+    console.log(`Organizer TZ input: ${organizerTimezone}, resolved: ${resolvedTz}`);
+
     for (let i = 0; i < newlySentSlots.length; i++) {
       await sendEmail({
         to: organizerEmail,
@@ -190,7 +191,7 @@ export async function POST(req: Request) {
         slot: newlySentSlots[i],
         index: i + 1,
         total: newlySentSlots.length,
-        timezone: organizerTimezone || 'UTC',
+        timezone: resolvedTz,
         type: 'organizer',
       });
       await new Promise(resolve => setTimeout(resolve, 400));

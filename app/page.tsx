@@ -101,6 +101,21 @@ useEffect(() => {
   }
 }, []);
 
+useEffect(() => {
+  const updateIsPro = () => {
+    const stored = localStorage.getItem('isPro');
+    setIsPro(stored === 'true');
+  };
+
+  updateIsPro(); // Initial check
+
+  window.addEventListener('isProUpdate', updateIsPro);
+
+  return () => {
+    window.removeEventListener('isProUpdate', updateIsPro);
+  };
+}, []);
+
 
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const uniqueTimeZones = [
@@ -160,33 +175,33 @@ useEffect(() => {
       sessionStorage.setItem('newSession', 'true');
     }
   }, []);
- useEffect(() => {
-  if (organizerEmail) {
-    fetch('/api/init-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: organizerEmail }),
-    })
-      .then(() => {
-        return fetch('/api/get-user-access', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: organizerEmail }),
-        });
-      })
-      .then(res => res.json())
-      .then(({ isPro }) => {
-        localStorage.setItem('isPro', isPro ? 'true' : 'false');
 
-        // ✅ Simulate reactive update for same-tab state (useIsPro)
-        const event = new CustomEvent('isProUpdate', { detail: isPro });
-        window.dispatchEvent(event);
+
+ useEffect(() => {
+  const email = organizerEmail || localStorage.getItem('participantEmail');
+  if (!email) return;
+
+  fetch('/api/init-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+    .then(() =>
+      fetch('/api/get-user-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       })
-      .catch(err => {
-        console.error('❌ Failed to sync isPro status:', err);
-      });
-  }
+    )
+    .then((res) => res.json())
+    .then(({ isPro }) => {
+      localStorage.setItem('isPro', isPro ? 'true' : 'false');
+      window.dispatchEvent(new CustomEvent('isProUpdate', { detail: isPro }));
+    })
+    .catch((err) => console.error('❌ Failed to fetch user access:', err));
 }, [organizerEmail]);
+
+
 
 
   
