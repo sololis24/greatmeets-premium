@@ -90,9 +90,9 @@ export async function POST(req: Request) {
                 : `You're all set! The time for your Great Meet with <strong>${formattedOrganizer}</strong> has been confirmed.`
             }
           </p>
-          <p style="font-size: 20px; margin: 20px 0 10px; font-weight: bold; color: #111;">
-            ${timeRange}
-          </p>
+         <p style="font-size: 20px; margin: 20px 0 10px; font-weight: bold; color: #111;">
+  ${formattedDate}<br />${startTime}–${endTime} (${timezone})
+</p>
           <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;" />
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 32px auto; text-align: center;">
             <tr>
