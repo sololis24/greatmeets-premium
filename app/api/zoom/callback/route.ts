@@ -8,10 +8,26 @@ export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
   const userToken = req.nextUrl.searchParams.get('state');
 
-  if (!code || !userToken) {
-    console.error('❌ Missing code or userToken in callback');
-    return NextResponse.json({ error: 'Missing code or userToken' }, { status: 400 });
-  }
+if (!code || !userToken) {
+  console.warn('⚠️ Zoom callback missing code or userToken. Possibly a test before Marketplace approval.');
+
+  return new NextResponse(
+    `
+      <html>
+        <head><title>Zoom Authorization Pending</title></head>
+        <body style="font-family: sans-serif; padding: 2rem;">
+          <h2>Zoom Authorization Pending</h2>
+          <p>This Zoom app has not been approved yet, so the authorization cannot be completed.</p>
+          <p>If you're a reviewer, this behavior is expected. Once the app is approved, this page will redirect users to the app after successful Zoom integration.</p>
+        </body>
+      </html>
+    `,
+    {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' },
+    }
+  );
+}
 
   const redirectUri = process.env.ZOOM_REDIRECT_URI!;
 
@@ -71,4 +87,3 @@ export async function GET(req: NextRequest) {
 }
 
 
-// 👈 hi
