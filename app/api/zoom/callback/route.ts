@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     /** ------------------------------------------------------------------
      *  2 ) Exchange code → access / refresh token
      * ------------------------------------------------------------------ */
-    const redirectUri = process.env.ZOOM_POPUP_REDIRECT_URI!;
+    const redirectUri = process.env.ZOOM_REDIRECT_URI!;
     const credentials = Buffer.from(
       `${process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID}:${process.env.ZOOM_CLIENT_SECRET}`,
     ).toString('base64');
