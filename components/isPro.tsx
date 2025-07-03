@@ -42,3 +42,4 @@ export function useIsPro(): boolean | null {
   return isPro;
 }
 //hi again
+// ✅ Initial read hello
