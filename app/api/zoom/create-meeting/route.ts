@@ -100,10 +100,10 @@ export async function POST(req: NextRequest) {
       ({ ok, data } = await createZoomMeeting(accessToken));
     }
 
-    if (!ok) {
-      console.error('❌ Zoom meeting creation failed:', data);
-      return NextResponse.json({ error: data }, { status: 500 });
-    }
+  if (!ok) {
+  console.error('Zoom meeting creation failed:', JSON.stringify(data, null, 2));
+  return NextResponse.json({ error: data }, { status: 500 });
+}
 
     console.log('✅ Zoom meeting created:', data.join_url);
     return NextResponse.json({ join_url: data.join_url });

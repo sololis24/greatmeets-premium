@@ -1,11 +1,5 @@
 'use client';
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  RefObject,
-} from 'react';
+import React, { useState, useEffect, useCallback, useRef, RefObject } from 'react';
 import { Check } from 'lucide-react';
 
 type Props = {
@@ -23,7 +17,7 @@ export default function MeetingLinkIntegration({
   scrollToMeetingLinkRef,
   setJustGeneratedMeetingLink,
 }: Props) {
-  /* ─────────────────────────────  Local state  ───────────────────────────── */
+  /* ───── Local state ───── */
   const [zoomConnected, setZoomConnected] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [loadingZoom, setLoadingZoom] = useState(false);
@@ -33,15 +27,13 @@ export default function MeetingLinkIntegration({
   const isZoomLink = meetingLink.includes('zoom.us');
   const isGoogleLink = meetingLink.includes('meet.google.com');
 
-  /* ───────────────────────────  Zoom popup flow  ─────────────────────────── */
+  /* ───── Zoom popup flow ───── */
   const openZoomPopup = useCallback(() => {
-    /* Ensure we have a persistent userToken for the OAuth state param */
     let token = localStorage.getItem('userToken');
     if (!token) {
       token = crypto.randomUUID();
       localStorage.setItem('userToken', token);
     }
-
     const clientId = process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID!;
     const redirectUri = process.env.NEXT_PUBLIC_ZOOM_POPUP_REDIRECT_URI!;
     const authUrl =
@@ -50,85 +42,79 @@ export default function MeetingLinkIntegration({
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&state=${token}`;
 
+    console.log('[Popup] opening Zoom OAuth:', { authUrl, token });
     window.open(authUrl, '_blank', 'width=500,height=700,noopener,noreferrer');
   }, []);
 
-
-
-
- /* Listen for the popup → main-window postMessage */
-useEffect(() => {
-  async function handleMessage(e: MessageEvent) {
-    if (e.data?.source !== 'zoom_oauth') return;
-
-    const { code, userToken: tokenFromPopup } = e.data;
-
-    try {
-      // 1️⃣ Exchange the code for tokens
-      const res = await fetch('/api/zoom/callback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, state: tokenFromPopup }),
-      });
-      if (!res.ok) throw new Error('Token exchange failed');
-
-      // 2️⃣ Persist the token so later calls use the same key
-      localStorage.setItem('userToken', tokenFromPopup);
-      localStorage.setItem('zoomConnected', 'true');
-      setZoomConnected(true);
-
-      // 3️⃣ Immediately create the meeting with the matching token
-      handleCreateZoomMeeting(tokenFromPopup);
-    } catch (err) {
-      console.error('❌ Zoom auth exchange error:', err);
-      alert('Zoom authorisation failed. Please try again.');
-    }
-  }
-
-  window.addEventListener('message', handleMessage);
-  return () => window.removeEventListener('message', handleMessage);
-}, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-
-
-
-
-
-  /* Restore Zoom connection state on load (in case of refresh) */
+  /* ───── Listen for popup → postMessage ───── */
   useEffect(() => {
-    if (localStorage.getItem('zoomConnected') === 'true') {
-      setZoomConnected(true);
+    async function handleMessage(e: MessageEvent) {
+      if (e.data?.source !== 'zoom_oauth') return;
+      const { code, userToken: tokenFromPopup } = e.data;
+      console.log('[Message] received from popup:', { code, tokenFromPopup });
+
+      try {
+        const res = await fetch('/api/zoom/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, state: tokenFromPopup }),
+        });
+        console.log('[Callback] status:', res.status);
+        if (!res.ok) throw new Error('Token exchange failed');
+
+        localStorage.setItem('userToken', tokenFromPopup);
+        localStorage.setItem('zoomConnected', 'true');
+        setZoomConnected(true);
+
+        console.log('[Callback] token stored, creating meeting...');
+        handleCreateZoomMeeting(tokenFromPopup);
+      } catch (err) {
+        console.error('❌ Zoom auth exchange error:', err);
+        alert('Zoom authorisation failed. Please try again.');
+      }
     }
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Restore previous state */
+  useEffect(() => {
+    if (localStorage.getItem('zoomConnected') === 'true') setZoomConnected(true);
   }, []);
 
+  /* ───── Create Zoom Meeting ───── */
+  const handleCreateZoomMeeting = async (tokenOverride?: string) => {
+    const tokenToUse = tokenOverride || userToken;
+    console.log('[CreateMeeting] using token:', tokenToUse);
+    if (!tokenToUse) {
+      alert('User token missing.'); return;
+    }
+    setLoadingZoom(true);
+    try {
+      const res = await fetch('/api/zoom/create-meeting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userToken: tokenToUse }),
+      });
+      const data = await res.json();
+      console.log('[CreateMeeting] response:', res.status, data);
 
+      if (!res.ok) throw new Error(data.error || 'Failed to create Zoom meeting');
+      if (!data.join_url) throw new Error('Zoom did not return join_url');
 
+      setMeetingLink(data.join_url);
+      setJustGeneratedMeetingLink(true);
+      console.log('🎯 Zoom Meeting URL set:', data.join_url);
+    } catch (err: any) {
+      console.error('❌ Error creating Zoom meeting:', err);
+      alert(err.message || 'Something went wrong.');
+    } finally {
+      setLoadingZoom(false);
+    }
+  };
 
-  /* ────────────────────────  Create Zoom Meeting  ────────────────────────── */
-const handleCreateZoomMeeting = async (tokenOverride?: string) => {
-  const tokenToUse = tokenOverride || userToken;
-  if (!tokenToUse) {
-    alert('User token missing.');
-    return;
-  }
-  setLoadingZoom(true);
-  try {
-    const res = await fetch('/api/zoom/create-meeting', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userToken: tokenToUse }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create Zoom meeting');
-    setMeetingLink(data.join_url);
-    setJustGeneratedMeetingLink(true);
-  } catch (err: any) {
-    console.error('❌ Error creating Zoom meeting:', err);
-    alert(err.message || 'Something went wrong.');
-  } finally {
-    setLoadingZoom(false);
-  }
-};
+  
 
 
 
