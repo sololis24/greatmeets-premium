@@ -24,18 +24,15 @@ export default function MeetingLinkIntegration({
   scrollToMeetingLinkRef,
   setJustGeneratedMeetingLink,
 }: Props) {
-  /* ───── Local state ───── */
   const [zoomConnected, setZoomConnected] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [loadingZoom, setLoadingZoom] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
-
   const popupCloseTimer = useRef<NodeJS.Timeout | null>(null);
 
   const isZoomLink = meetingLink.includes("zoom.us");
   const isGoogleLink = meetingLink.includes("meet.google.com");
 
-  /* ───── Zoom popup flow ───── */
   const openZoomPopup = useCallback(() => {
     let token = localStorage.getItem("userToken");
     if (!token) {
@@ -53,11 +50,7 @@ export default function MeetingLinkIntegration({
       `&state=${token}`;
 
     console.log("[Popup] opening Zoom OAuth:", { authUrl, token });
-
-    // Show spinner immediately
     setLoadingZoom(true);
-
-    // NOTE: **do NOT** use `noopener,noreferrer` – we need `window.opener` alive
     const popup = window.open(authUrl, "zoom-oauth", "width=500,height=700");
 
     if (!popup) {
@@ -66,7 +59,6 @@ export default function MeetingLinkIntegration({
       return;
     }
 
-    // Clear loading state if user manually closes the popup
     popupCloseTimer.current = setInterval(() => {
       if (popup.closed) {
         clearInterval(popupCloseTimer.current as NodeJS.Timeout);
@@ -75,17 +67,14 @@ export default function MeetingLinkIntegration({
     }, 500);
   }, []);
 
-  /* ───── Listen for popup → postMessage ───── */
   useEffect(() => {
     async function handleMessage(e: MessageEvent) {
-      // security guard
       if (e.origin !== window.location.origin) return;
       if (e.data?.source !== "zoom_oauth") return;
 
       const { code, userToken: tokenFromPopup } = e.data;
       console.log("[Message] received from popup:", { code, tokenFromPopup });
 
-      // We got a message – popup is done, clear spinner / timer
       if (popupCloseTimer.current) {
         clearInterval(popupCloseTimer.current);
         popupCloseTimer.current = null;
@@ -97,15 +86,16 @@ export default function MeetingLinkIntegration({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, state: tokenFromPopup }),
         });
-        console.log("[Callback] status:", res.status);
-        if (!res.ok) throw new Error("Token exchange failed");
+        const data = await res.json();
+        console.log("[Callback] status:", res.status, data);
+        if (!res.ok) throw new Error(data?.error_description || "Token exchange failed");
 
         localStorage.setItem("userToken", tokenFromPopup);
         localStorage.setItem("zoomConnected", "true");
         setZoomConnected(true);
 
         console.log("[Callback] token stored, creating meeting...");
-        await handleCreateZoomMeeting(tokenFromPopup); // awaits so we can clear loader right after
+        await handleCreateZoomMeeting(tokenFromPopup);
       } catch (err) {
         console.error("❌ Zoom auth exchange error:", err);
         alert("Zoom authorisation failed. Please try again.");
@@ -116,14 +106,12 @@ export default function MeetingLinkIntegration({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  /* Restore previous state on mount */
   useEffect(() => {
     if (localStorage.getItem("zoomConnected") === "true") setZoomConnected(true);
   }, []);
 
-  /* ───── Create Zoom Meeting ───── */
   const handleCreateZoomMeeting = async (tokenOverride?: string) => {
     const tokenToUse = tokenOverride || userToken;
     console.log("[CreateMeeting] using token:", tokenToUse);
@@ -156,7 +144,6 @@ export default function MeetingLinkIntegration({
     }
   };
 
-  /* ──────────────────────── Google‑Meet logic (unchanged) ──────────────── */
   const handleCreateGoogleMeeting = async () => {
     if (!userToken) {
       alert("User token missing.");
@@ -203,15 +190,12 @@ export default function MeetingLinkIntegration({
       `&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${scope}&access_type=offline&prompt=consent&state=${token}`;
 
-    window.location.href = googleUrl; // Google flow still uses redirect
+    window.location.href = googleUrl;
   };
 
-  /* ─────────────────────────────── Render ─────────────────────────────── */
   return (
     <div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-200 shadow-lg">
-      {/* Buttons */}
       <div className="flex flex-wrap gap-4">
-        {/* ───────── Zoom Button ───────── */}
         {!isGoogleLink && (
           <div>
             {zoomConnected ? (
@@ -246,7 +230,6 @@ export default function MeetingLinkIntegration({
           </div>
         )}
 
-        {/* ───────── Google Button (unchanged) ───────── */}
         {!isZoomLink && (
           <div>
             {googleConnected ? (
@@ -284,7 +267,6 @@ export default function MeetingLinkIntegration({
         )}
       </div>
 
-      {/* ───────── Meeting link input ───────── */}
       <div ref={scrollToMeetingLinkRef}>
         <input
           type="url"
