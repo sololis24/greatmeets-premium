@@ -40,10 +40,16 @@ export async function POST(req: NextRequest) {
 
     const data = await zoomRes.json();
 
-    if (!zoomRes.ok) {
-      console.error('❌ Zoom token exchange failed:', data);
-      return NextResponse.json({ error: data }, { status: 500 });
-    }
+   if (!zoomRes.ok) {
+  console.error("❌ Zoom token exchange failed →", {
+    status: zoomRes.status,
+    error: data?.error,
+    reason: data?.reason,
+    full: JSON.stringify(data),
+  });
+  return NextResponse.json({ error: data }, { status: 500 });
+}
+
 
     /** ------------------------------------------------------------------
      *  3 ) Persist tokens in Firestore (keyed by your userToken)
@@ -65,7 +71,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-
- // hello
- // must match the popup page URL
