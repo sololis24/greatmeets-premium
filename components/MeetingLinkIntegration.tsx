@@ -13,8 +13,8 @@ type Props = {
   meetingLink: string;
   setMeetingLink: (val: string) => void;
   userToken: string;
-  scrollToMeetingLinkRef: RefObject<HTMLDivElement>;
   setJustGeneratedMeetingLink: (val: boolean) => void;
+  scrollToMeetingLinkRef: RefObject<HTMLDivElement | null>; // ← allow null
 };
 
 export default function MeetingLinkIntegration({
