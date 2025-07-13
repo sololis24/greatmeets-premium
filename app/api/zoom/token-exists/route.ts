@@ -13,3 +13,5 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ exists: snapshot.exists() });
 }
+
+//hello there
