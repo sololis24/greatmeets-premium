@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
     /* ------------------------------------------------------------------
      * 2) Exchange code → access / refresh tokens
      * ----------------------------------------------------------------*/
-    const redirectUri = process.env.ZOOM_REDIRECT_URI!; // e.g. https://app.greatmeets.ai/zoom/popup
-    const clientId = process.env.ZOOM_CLIENT_ID!; // **must be the *Production* ID in prod**
+    const redirectUri = process.env.ZOOM_REDIRECT_URI!;
+    const clientId = process.env.ZOOM_CLIENT_ID!;
     const clientSecret = process.env.ZOOM_CLIENT_SECRET!;
 
     const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
@@ -63,12 +63,16 @@ export async function POST(req: NextRequest) {
     /* ------------------------------------------------------------------
      * 3) Persist tokens in Firestore (collection: zoomTokens)
      * ----------------------------------------------------------------*/
+    const now = Date.now();
+    const expiresAt = now + data.expires_in * 1000; // expires_in is in seconds
+
     await setDoc(doc(db, "zoomTokens", userToken), {
       access_token: data.access_token,
       refresh_token: data.refresh_token,
       expires_in: data.expires_in,
+      expires_at: expiresAt,
       token_type: data.token_type,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(now).toISOString(),
     });
 
     return NextResponse.json({ success: true });
