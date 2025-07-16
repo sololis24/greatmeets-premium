@@ -56,18 +56,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing userToken' }, { status: 400 });
     }
 
-    console.log('📥 create-meeting request received for token:', userToken);
+    console.log('📥 [API] create-meeting called with userToken:', userToken);
 
     const tokenRef = doc(db, 'zoomTokens', userToken);
     const tokenDoc = await getDoc(tokenRef);
 
     if (!tokenDoc.exists()) {
-      console.warn('⚠️ No Zoom token found for userToken:', userToken);
+      console.warn('⚠️ [API] No Zoom token found for token:', userToken);
       return NextResponse.json({ error: 'Zoom token not found' }, { status: 401 });
     }
 
     const tokenData = tokenDoc.data();
     let accessToken = tokenData.access_token;
+
+    console.log('🔑 [API] Access token fetched (partial):', accessToken?.slice(0, 8) + '...');
 
     const createZoomMeeting = async (token: string) => {
       const res = await fetch('https://api.zoom.us/v2/users/me/meetings', {
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           topic: 'GreatMeet',
-          type: 1,
+          type: 1, // Instant meeting
           settings: {
             host_video: true,
             participant_video: true,
@@ -90,29 +92,41 @@ export async function POST(req: NextRequest) {
       return { ok: res.ok, data };
     };
 
-    // Try first time
+    // 1st attempt
     let { ok, data } = await createZoomMeeting(accessToken);
 
-    // Retry after refresh if needed
+    // If unauthorized, refresh token and retry
     if (!ok && data?.code === 124) {
-      console.warn('🔁 Zoom token expired. Refreshing...');
+      console.warn('🔁 [API] Zoom access token expired. Refreshing...');
       accessToken = await refreshZoomAccessToken(userToken);
       ({ ok, data } = await createZoomMeeting(accessToken));
     }
 
-if (!ok) {
-  console.error('🔴 Zoom Meeting Creation Error:', JSON.stringify(data, null, 2));
-  return NextResponse.json(
-    { error: data.message || JSON.stringify(data), zoomCode: data.code },
-    { status: 500 }
-  );
-}
+    if (!ok) {
+      console.error('❌ [API] Zoom Meeting Creation Failed:', JSON.stringify(data, null, 2));
+      return NextResponse.json(
+        {
+          error: data?.message || 'Zoom meeting creation failed',
+          zoomCode: data?.code || 'unknown',
+          fullZoomResponse: data,
+        },
+        { status: 500 }
+      );
+    }
 
+    if (!data?.join_url) {
+      console.error('⚠️ [API] Zoom response missing join_url:', data);
+      return NextResponse.json({ error: 'Zoom did not return a join_url' }, { status: 502 });
+    }
 
-    console.log('✅ Zoom meeting created:', data.join_url);
+    console.log('✅ [API] Zoom meeting created:', data.join_url);
     return NextResponse.json({ join_url: data.join_url });
+
   } catch (error: any) {
-    console.error('❌ Error creating Zoom meeting:', error.message || error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    console.error('❌ [API] Fatal error in create-meeting:', error?.message || error);
+    return NextResponse.json(
+      { error: error?.message || 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }
