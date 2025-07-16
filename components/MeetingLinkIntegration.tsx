@@ -13,7 +13,7 @@ type Props = {
 export default function MeetingLinkIntegration({
   meetingLink,
   setMeetingLink,
-  userToken,
+  userToken: initialUserToken,
   scrollToMeetingLinkRef,
   setJustGeneratedMeetingLink,
 }: Props) {
@@ -26,6 +26,10 @@ export default function MeetingLinkIntegration({
   const isZoomLink = meetingLink.includes("zoom.us");
   const isGoogleLink = meetingLink.includes("meet.google.com");
 
+  const getUserToken = () => {
+    return localStorage.getItem("userToken") || initialUserToken;
+  };
+
   const openZoomPopup = useCallback(() => {
     let token = localStorage.getItem("userToken");
     if (!token) {
@@ -35,11 +39,8 @@ export default function MeetingLinkIntegration({
 
     const clientId = process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID!;
     const redirectUri = process.env.NEXT_PUBLIC_ZOOM_POPUP_REDIRECT_URI!;
-
-    const authUrl = `https://zoom.us/oauth/authorize?response_type=code` +
-      `&client_id=${clientId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&state=${token}`;
+    const authUrl =
+      `https://zoom.us/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${token}`;
 
     console.log("[Popup] opening Zoom OAuth:", { authUrl, token });
     setLoadingZoom(true);
@@ -61,7 +62,8 @@ export default function MeetingLinkIntegration({
 
   useEffect(() => {
     async function handleMessage(e: MessageEvent) {
-      if (e.origin !== window.location.origin || e.data?.source !== "zoom_oauth") return;
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.source !== "zoom_oauth") return;
 
       const { code, userToken: tokenFromPopup } = e.data;
       console.log("[Message] received from popup:", { code, tokenFromPopup });
@@ -78,6 +80,7 @@ export default function MeetingLinkIntegration({
           body: JSON.stringify({ code, state: tokenFromPopup }),
         });
         const data = await res.json();
+        console.log("[Callback] status:", res.status, data);
         if (!res.ok) throw new Error(data?.error_description || "Token exchange failed");
 
         localStorage.setItem("userToken", tokenFromPopup);
@@ -88,7 +91,7 @@ export default function MeetingLinkIntegration({
         await handleCreateZoomMeeting(tokenFromPopup);
       } catch (err) {
         console.error("❌ Zoom auth exchange error:", err);
-        alert("Zoom authorisation failed. Please try again.");
+        alert("Zoom authorization failed. Please try again.");
       } finally {
         setLoadingZoom(false);
       }
@@ -99,15 +102,13 @@ export default function MeetingLinkIntegration({
   }, []);
 
   useEffect(() => {
-    const hasToken = !!localStorage.getItem("userToken");
-    const isConnected = localStorage.getItem("zoomConnected") === "true";
-    if (hasToken || isConnected) setZoomConnected(true);
+    if (localStorage.getItem("zoomConnected") === "true") setZoomConnected(true);
   }, []);
 
   const handleCreateZoomMeeting = async (tokenOverride?: string) => {
-    const tokenToUse = tokenOverride || userToken;
-    if (!tokenToUse) {
-      alert("User token missing.");
+    const token = tokenOverride || getUserToken();
+    if (!token) {
+      alert("Zoom token not found.");
       return;
     }
 
@@ -116,15 +117,16 @@ export default function MeetingLinkIntegration({
       const res = await fetch("/api/zoom/create-meeting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userToken: tokenToUse }),
+        body: JSON.stringify({ userToken: token }),
       });
       const data = await res.json();
+      console.log("[CreateMeeting] response:", res.status, data);
+
       if (!res.ok) throw new Error(data.error || "Failed to create Zoom meeting");
       if (!data.join_url) throw new Error("Zoom did not return join_url");
 
       setMeetingLink(data.join_url);
       setJustGeneratedMeetingLink(true);
-      console.log("🎯 Zoom Meeting URL set:", data.join_url);
     } catch (err: any) {
       console.error("❌ Error creating Zoom meeting:", err);
       alert(err.message || "Something went wrong.");
@@ -134,7 +136,8 @@ export default function MeetingLinkIntegration({
   };
 
   const handleCreateGoogleMeeting = async () => {
-    if (!userToken) {
+    const token = getUserToken();
+    if (!token) {
       alert("User token missing.");
       return;
     }
@@ -144,7 +147,7 @@ export default function MeetingLinkIntegration({
       const res = await fetch("/api/google/create-meeting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userToken }),
+        body: JSON.stringify({ userToken: token }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create Google Meet link");
@@ -176,9 +179,7 @@ export default function MeetingLinkIntegration({
 
     const scope = encodeURIComponent("https://www.googleapis.com/auth/calendar.events");
     const googleUrl =
-      `https://accounts.google.com/o/oauth2/v2/auth?response_type=code` +
-      `&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=${scope}&access_type=offline&prompt=consent&state=${token}`;
+      `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&access_type=offline&prompt=consent&state=${token}`;
 
     window.location.href = googleUrl;
   };
@@ -186,27 +187,28 @@ export default function MeetingLinkIntegration({
   return (
     <div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-200 shadow-lg">
       <div className="flex flex-wrap gap-4">
-        {/* Zoom Button Logic */}
         {!isGoogleLink && (
           <div>
-            {isZoomLink ? (
-              <button
-                type="button"
-                disabled
-                className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-500 rounded-full font-medium cursor-default border border-gray-300"
-              >
-                <Check className="w-4 h-4 text-green-600" />
-                Zoom Link Ready!
-              </button>
-            ) : zoomConnected ? (
-              <button
-                type="button"
-                onClick={() => handleCreateZoomMeeting()}
-                disabled={loadingZoom}
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-full font-semibold hover:opacity-90 transition disabled:opacity-50"
-              >
-                {loadingZoom ? "Creating Zoom Link…" : "Generate Zoom Link"}
-              </button>
+            {zoomConnected ? (
+              meetingLink ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-500 rounded-full font-medium cursor-default border border-gray-300"
+                >
+                  <Check className="w-4 h-4 text-green-600" />
+                  Zoom Link Ready!
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleCreateZoomMeeting()}
+                  disabled={loadingZoom}
+                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-full font-semibold hover:opacity-90 transition disabled:opacity-50"
+                >
+                  {loadingZoom ? "Creating Zoom Link…" : "Generate Zoom Link"}
+                </button>
+              )
             ) : (
               <button
                 type="button"
@@ -219,7 +221,6 @@ export default function MeetingLinkIntegration({
           </div>
         )}
 
-        {/* Google Meet Button Logic */}
         {!isZoomLink && (
           <div>
             {googleConnected ? (
