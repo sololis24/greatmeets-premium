@@ -139,18 +139,45 @@ export async function POST(req: Request) {
         </div>
       </div>`;
 
-      const result = await resend.emails.send({
-        from: 'Great Meets <noreply@greatmeets.ai>',
-        to,
-        subject,
-        html,
-        attachments: [
-          {
-            filename: 'GreatMeet.ics',
-            content: Buffer.from(icsContent, 'utf-8'),
-          },
-        ],
-      });
+const plainText = `
+Hey ${name},
+
+${multiSlotConfirmation && total > 1
+  ? `You're all set! Multiple confirmed times have been finalized for your Great Meet.`
+  : `You're all set! The time for your Great Meet with ${formattedOrganizer} has been confirmed.`}
+
+Date: ${formattedDate}
+Time: ${startTime}–${endTime} (${timezone})
+
+${meetingLink ? `Join Meeting: ${meetingLink}` : ''}
+Add to Google Calendar: ${googleCalURL}
+
+View Final Poll: ${pollLink}
+
+${type === 'organizer' && nonVoterNames.length > 0
+  ? `FYI: These invitees didn’t vote: ${nonVoterNames.join(', ')}`
+  : ''}
+
+Powered by GreatMeets.ai — Fast and Human Scheduling.
+https://www.greatmeets.ai
+`.trim();
+
+const result = await resend.emails.send({
+  from: 'Great Meets <noreply@greatmeets.ai>',
+  to,
+  subject,
+  html,
+  text: plainText,
+  headers: {
+    'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>',
+  },
+  attachments: [
+    {
+      filename: 'GreatMeet.ics',
+      content: Buffer.from(icsContent, 'utf-8'),
+    },
+  ],
+});
 
       console.log(`📤 Sent to ${type}: ${to}, status:`, result);
     };
