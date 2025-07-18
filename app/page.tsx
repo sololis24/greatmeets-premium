@@ -443,40 +443,53 @@ if (userToken) {
     }
   };
  
-  const handleCreatePoll = async () => {
-    // 🔒 Check if user’s trial has expired
-    const res = await fetch('/api/get-user-access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: organizerEmail }),
-    });
-    const { isPro, inTrial } = await res.json();
-    
-    if (!isPro && !inTrial) {
-      router.push('/upgrade');
-      return;
-    }
-    
-    // 🟢 Start trial if it's their first time using a Pro feature
-    if (!localStorage.getItem('trialStartedAt')) {
-      localStorage.setItem('trialStartedAt', new Date().toISOString());
-    }
-  
-    // ✅ Validate required fields
-    if (
-      !title ||
-      !organizerFirstName ||
-      !organizerLastName ||
-      !organizerEmail ||
-      selectedTimes.length === 0 ||
-      invitees.length === 0
-    ) {
-      setToastMessage('Please fill out all fields and invite at least one person.');
-      setToastType('error');
-      setToastVisible(true);
-      return;
-    }
-  
+
+const [isCreatingPoll, setIsCreatingPoll] = useState(false);
+
+ const handleCreatePoll = async () => {
+  if (isCreatingPoll) return;        // 🛑 Block duplicate clicks
+  setIsCreatingPoll(true);           // ✅ Lock submission
+
+  // 🔒 Check if user’s trial has expired
+  const res = await fetch('/api/get-user-access', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: organizerEmail }),
+  });
+
+  const { isPro, inTrial } = await res.json();
+
+  if (!isPro && !inTrial) {
+    router.push('/upgrade');
+    setIsCreatingPoll(false); // ✅ Unlock on early return
+    return;
+  }
+
+  // 🟢 Start trial if it's their first time using a Pro feature
+  if (!localStorage.getItem('trialStartedAt')) {
+    localStorage.setItem('trialStartedAt', new Date().toISOString());
+  }
+
+  // ✅ Validate required fields
+  if (
+    !title ||
+    !organizerFirstName ||
+    !organizerLastName ||
+    !organizerEmail ||
+    selectedTimes.length === 0 ||
+    invitees.length === 0
+  ) {
+    setToastMessage('Please fill out all fields and invite at least one person.');
+    setToastType('error');
+    setToastVisible(true);
+    setIsCreatingPoll(false); // ✅ Unlock on early return
+    return;
+  }
+
+
+
+
+
     try {
       setLoading(true);
   
@@ -526,7 +539,6 @@ if (userToken) {
         body: JSON.stringify(emailPayload),
       });
       
-  
       const data = await response.json();
   
       if (!response.ok) {
@@ -547,6 +559,7 @@ if (userToken) {
       setToastVisible(true);
     } finally {
       setLoading(false);
+      setIsCreatingPoll(false); // ✅ Unlock again
     }
   };
   
