@@ -92,7 +92,32 @@ export default function MeetingLinkIntegration({
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem("zoomConnected") === "true") setZoomConnected(true);
+    const token = getUserToken();
+    if (!token) return;
+
+    const checkZoomTokenExists = async () => {
+      try {
+        const res = await fetch("/api/zoom/token-exists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userToken: token }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.exists) {
+          localStorage.setItem("zoomConnected", "true");
+          setZoomConnected(true);
+        } else {
+          localStorage.removeItem("zoomConnected");
+          setZoomConnected(false);
+        }
+      } catch (err) {
+        console.error("❌ Error checking Zoom token existence:", err);
+        setZoomConnected(false);
+      }
+    };
+
+    checkZoomTokenExists();
   }, []);
 
   const handleCreateZoomMeeting = async (tokenOverride?: string) => {
