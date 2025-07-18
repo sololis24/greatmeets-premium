@@ -172,7 +172,7 @@ export async function POST(req: Request) {
           timezone: tz,
           type: 'invitee',
         });
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500)); // 1 to 1.5 sec delay
       }
     }
 
@@ -194,7 +194,7 @@ export async function POST(req: Request) {
         timezone: resolvedTz,
         type: 'organizer',
       });
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500)); // 1 to 1.5 sec delay
     }
 
     return new Response('Batch confirmation emails sent.', { status: 200 });
