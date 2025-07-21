@@ -53,8 +53,6 @@ export async function POST(req: Request) {
       const gcalStart = formatInTimeZone(start, 'UTC', "yyyyMMdd'T'HHmmss'Z'");
       const gcalEnd = formatInTimeZone(end, 'UTC', "yyyyMMdd'T'HHmmss'Z'");
 
-      const googleCalURL = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(meetingTitle)}&dates=${gcalStart}/${gcalEnd}&details=${encodeURIComponent('Scheduled via GreatMeets')}&location=${encodeURIComponent(meetingLink || '')}`;
-
       const subject = multiSlotConfirmation && total > 1
         ? `📅 Your Great Meet Times are Confirmed (${index}/${total})`
         : '📅 Your Great Meet Time is Confirmed';
@@ -94,8 +92,8 @@ export async function POST(req: Request) {
           <p style="font-size: 14px; color: #444;">Use the buttons below to access your meeting or add it to your calendar.</p>
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 32px auto; text-align: center;">
             <tr>
-           ${meetingLink ? `<td style="padding: 6px;"><a href="https://app.greatmeets.ai/api/zoom/redirect?target=${encodeURIComponent(meetingLink)}" target="_blank" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Join your Zoom</a></td>` : ''}
-              <td style="padding: 6px;"><a href="${googleCalURL}" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">📅 Add to Google Cal</a></td>
+           ${meetingLink ? `<td style="padding: 6px;"><a href="https://app.greatmeets.ai/api/r/zoom1" target="_blank" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Join your Zoom</a></td>` : ''}
+              <td style="padding: 6px;"><a href="https://app.greatmeets.ai/api/r/gcal1" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">📅 Add to Google Cal</a></td>
             </tr>
           </table>
           <a href="${pollLink}" style="background-color: #0047AB; background-image: linear-gradient(90deg, #f59e0b, #6366f1); color: white; text-decoration: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; display: inline-block; font-weight: 600;">View Final Poll</a>
@@ -116,11 +114,13 @@ ${multiSlotConfirmation && total > 1
 Date: ${formattedDate}
 Time: ${startTime}–${endTime} (${timezone})
 
-${meetingLink ? `Join Meeting: ${meetingLink}` : ''}
-Add to Google Calendar: ${googleCalURL}
+${meetingLink ? `Join Meeting: https://app.greatmeets.ai/api/r/zoom1` : ''}
+Add to Google Calendar: https://app.greatmeets.ai/api/r/gcal1
 View Final Poll: ${pollLink}
 
 ${type === 'organizer' && nonVoterNames.length > 0 ? `FYI: These invitees didn’t vote: ${nonVoterNames.join(', ')}` : ''}
+
+To unsubscribe: https://www.greatmeets.ai/unsubscribe
 
 If you have any questions, just reply to this email.
 
@@ -135,10 +135,10 @@ https://www.greatmeets.ai
         html,
         text: plainText,
         replyTo: 'noreply@greatmeets.ai',
-       headers: {
-  'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>, <https://www.greatmeets.ai/unsubscribe>',
-  'Precedence': 'bulk'
-},
+        headers: {
+          'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>, <https://www.greatmeets.ai/unsubscribe>',
+          'Precedence': 'bulk'
+        },
         attachments: [
           {
             filename: 'GreatMeet.ics',
