@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         `DTEND:${gcalEnd}`,
         `LOCATION:${meetingLink || 'GreatMeets'}`,
         `STATUS:CONFIRMED`,
-        `ORGANIZER;CN=${formattedOrganizer}:mailto:noreply@greatmeets.ai`,
+        `ORGANIZER;CN=${formattedOrganizer}:mailto:hello@greatmeets.ai`,
         'END:VEVENT',
         'END:VCALENDAR',
       ].join('\r\n');
@@ -163,14 +163,14 @@ https://www.greatmeets.ai
 `.trim();
 
 const result = await resend.emails.send({
-  from: 'Great Meets <noreply@greatmeets.ai>',
+  from: 'Great Meets <hello@greatmeets.ai>',
   to,
   subject,
   html,
   text: plainText,
-  headers: {
-    'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>',
-  },
+ headers: {
+  'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>, <https://www.greatmeets.ai/unsubscribe>',
+},
   attachments: [
     {
       filename: 'GreatMeet.ics',
