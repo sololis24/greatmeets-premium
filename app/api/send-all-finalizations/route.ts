@@ -94,7 +94,7 @@ export async function POST(req: Request) {
           <p style="font-size: 14px; color: #444;">Use the buttons below to access your meeting or add it to your calendar.</p>
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 32px auto; text-align: center;">
             <tr>
-              ${meetingLink ? `<td style="padding: 6px;"><a href="${meetingLink}" target="_blank" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Go to Your Great Meet</a></td>` : ''}
+           ${meetingLink ? `<td style="padding: 6px;"><a href="https://app.greatmeets.ai/api/zoom/redirect?target=${encodeURIComponent(meetingLink)}" target="_blank" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Join your Zoom</a></td>` : ''}
               <td style="padding: 6px;"><a href="${googleCalURL}" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">📅 Add to Google Cal</a></td>
             </tr>
           </table>
@@ -129,15 +129,16 @@ https://www.greatmeets.ai
 `.trim();
 
       const result = await resend.emails.send({
-        from: 'Great Meets <hello@greatmeets.ai>',
+        from: 'Great Meets <noreply@greatmeets.ai>',
         to,
         subject,
         html,
         text: plainText,
-        replyTo: 'hello@greatmeets.ai',
-        headers: {
-          'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>, <https://www.greatmeets.ai/unsubscribe>'
-        },
+        replyTo: 'noreply@greatmeets.ai',
+       headers: {
+  'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>, <https://www.greatmeets.ai/unsubscribe>',
+  'Precedence': 'bulk'
+},
         attachments: [
           {
             filename: 'GreatMeet.ics',
