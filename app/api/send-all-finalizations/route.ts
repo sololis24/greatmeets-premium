@@ -49,7 +49,6 @@ export async function POST(req: Request) {
       const formattedDate = formatInTimeZone(start, timezone, "EEEE, d MMM yyyy");
       const startTime = formatInTimeZone(start, timezone, 'HH:mm');
       const endTime = formatInTimeZone(end, timezone, 'HH:mm');
-      const timeRange = `${formattedDate}<br />${startTime}–${endTime} (${timezone.replace(/_/g, ' ')})`;
 
       const gcalStart = formatInTimeZone(start, 'UTC', "yyyyMMdd'T'HHmmss'Z'");
       const gcalEnd = formatInTimeZone(end, 'UTC', "yyyyMMdd'T'HHmmss'Z'");
@@ -81,65 +80,33 @@ export async function POST(req: Request) {
       const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4;">
         <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto;">
-          <h2 style="font-size: 22px; font-weight: bold; color: #10b981;">Final Time Confirmed</h2>
+          <h2 style="font-size: 22px; font-weight: bold; color: #10b981;">Your Great Meet Time is Ready</h2>
           <p style="font-size: 16px; color: #333;">
-            Hey ${name} 👋<br />
-            ${
-              multiSlotConfirmation && total > 1
-                ? `You're all set! <strong>Multiple confirmed times</strong> have been finalized for your Great Meet.`
-                : `You're all set! The time for your Great Meet with <strong>${formattedOrganizer}</strong> has been confirmed.`
+            Hi ${name} 👋<br/>
+            ${multiSlotConfirmation && total > 1
+              ? `You're all set! <strong>Multiple confirmed times</strong> have been finalized for your Great Meet.`
+              : `You're all set! The time for your Great Meet with <strong>${formattedOrganizer}</strong> has been confirmed.`
             }
           </p>
-         <p style="font-size: 20px; margin: 20px 0 10px; font-weight: bold; color: #111;">
-  ${formattedDate}<br />${startTime}–${endTime} (${timezone})
-</p>
-          <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;" />
+          <p style="font-size: 18px; margin: 20px 0 10px; font-weight: 500; color: #111;">
+            ${formattedDate}<br />${startTime}–${endTime} (${timezone})
+          </p>
+          <p style="font-size: 14px; color: #444;">Use the buttons below to access your meeting or add it to your calendar.</p>
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 32px auto; text-align: center;">
             <tr>
-              ${
-                meetingLink
-                  ? `<td style="padding: 6px;">
-                <a href="${meetingLink}" target="_blank"
-                   style="display: inline-block; background: #3b82f6; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">
-                  🔗 Join Meeting
-                </a>
-              </td>` : ''
-              }
-              <td style="padding: 6px;">
-                <a href="${googleCalURL}" target="_blank"
-                   style="display: inline-block; background: #6366f1; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">
-                  📅 Google Cal
-                </a>
-              </td>
+              ${meetingLink ? `<td style="padding: 6px;"><a href="${meetingLink}" target="_blank" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Go to Your Great Meet</a></td>` : ''}
+              <td style="padding: 6px;"><a href="${googleCalURL}" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 12px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">📅 Add to Google Cal</a></td>
             </tr>
           </table>
-          <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;" />
-          <a href="${pollLink}" 
-             style="background-color: #0047AB; 
-                    background-image: linear-gradient(90deg, #f59e0b, #6366f1); 
-                    color: white; 
-                    text-decoration: none; 
-                    padding: 12px 24px; 
-                    font-size: 16px; 
-                    border-radius: 8px; 
-                    display: inline-block; 
-                    font-weight: 600;">
-            View Final Poll
-          </a>
-          ${
-            type === 'organizer' && nonVoterNames.length > 0
-              ? `<p style="font-size: 15px; color: #b91c1c; margin-top: 20px;">
-                  <strong>FYI:</strong> These invitees didn’t vote: ${nonVoterNames.join(', ')}
-                </p>`
-              : ''
-          }
-          <p style="font-size: 14px; color: #666666; margin-top: 30px;">
-            Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.
-          </p>
+          <a href="${pollLink}" style="background-color: #0047AB; background-image: linear-gradient(90deg, #f59e0b, #6366f1); color: white; text-decoration: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; display: inline-block; font-weight: 600;">View Final Poll</a>
+          ${type === 'organizer' && nonVoterNames.length > 0 ? `<p style="font-size: 15px; color: #b91c1c; margin-top: 20px;"><strong>FYI:</strong> These invitees didn’t vote: ${nonVoterNames.join(', ')}</p>` : ''}
+          <p style="font-size: 14px; color: #666666; margin-top: 30px;">Powered by <a href="https://www.greatmeets.ai" style="color: #10b981; text-decoration: underline;"><strong>GreatMeets.ai</strong></a> 🚀 — Fast and Human Scheduling.</p>
         </div>
       </div>`;
 
-const plainText = `
+      const plainText = `
+Your Great Meet time is confirmed!
+
 Hey ${name},
 
 ${multiSlotConfirmation && total > 1
@@ -151,77 +118,56 @@ Time: ${startTime}–${endTime} (${timezone})
 
 ${meetingLink ? `Join Meeting: ${meetingLink}` : ''}
 Add to Google Calendar: ${googleCalURL}
-
 View Final Poll: ${pollLink}
 
-${type === 'organizer' && nonVoterNames.length > 0
-  ? `FYI: These invitees didn’t vote: ${nonVoterNames.join(', ')}`
-  : ''}
+${type === 'organizer' && nonVoterNames.length > 0 ? `FYI: These invitees didn’t vote: ${nonVoterNames.join(', ')}` : ''}
+
+If you have any questions, just reply to this email.
 
 Powered by GreatMeets.ai — Fast and Human Scheduling.
 https://www.greatmeets.ai
 `.trim();
 
-const result = await resend.emails.send({
-  from: 'Great Meets <hello@greatmeets.ai>',
-  to,
-  subject,
-  html,
-  text: plainText,
- headers: {
-  'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>, <https://www.greatmeets.ai/unsubscribe>',
-},
-  attachments: [
-    {
-      filename: 'GreatMeet.ics',
-      content: Buffer.from(icsContent, 'utf-8'),
-    },
-  ],
-});
+      const result = await resend.emails.send({
+        from: 'Great Meets <hello@greatmeets.ai>',
+        to,
+        subject,
+        html,
+        text: plainText,
+        replyTo: 'hello@greatmeets.ai',
+        headers: {
+          'List-Unsubscribe': '<mailto:unsubscribe@greatmeets.ai>, <https://www.greatmeets.ai/unsubscribe>'
+        },
+        attachments: [
+          {
+            filename: 'GreatMeet.ics',
+            content: Buffer.from(icsContent, 'utf-8')
+          }
+        ]
+      });
 
       console.log(`📤 Sent to ${type}: ${to}, status:`, result);
     };
 
-    // Invitees
     for (const invitee of invitees) {
       const email = invitee.email?.trim().toLowerCase();
       const name = invitee.firstName || 'there';
-      const tz = typeof invitee.timezone === 'string' && invitee.timezone.includes('/')
-        ? invitee.timezone
-        : 'UTC';
+      const tz = typeof invitee.timezone === 'string' && invitee.timezone.includes('/') ? invitee.timezone : 'UTC';
       for (let i = 0; i < newlySentSlots.length; i++) {
-        await sendEmail({
-          to: email,
-          name,
-          slot: newlySentSlots[i],
-          index: i + 1,
-          total: newlySentSlots.length,
-          timezone: tz,
-          type: 'invitee',
-        });
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500)); // 1 to 1.5 sec delay
+        await sendEmail({ to: email, name, slot: newlySentSlots[i], index: i + 1, total: newlySentSlots.length, timezone: tz, type: 'invitee' });
+        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
       }
     }
 
-    // Organizer (updated logic)
-    const resolvedTz =
-      typeof organizerTimezone === 'string' && organizerTimezone.includes('/')
-        ? organizerTimezone
-        : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const resolvedTz = typeof organizerTimezone === 'string' && organizerTimezone.includes('/')
+      ? organizerTimezone
+      : Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
     console.log(`Organizer TZ input: ${organizerTimezone}, resolved: ${resolvedTz}`);
 
     for (let i = 0; i < newlySentSlots.length; i++) {
-      await sendEmail({
-        to: organizerEmail,
-        name: organizerName,
-        slot: newlySentSlots[i],
-        index: i + 1,
-        total: newlySentSlots.length,
-        timezone: resolvedTz,
-        type: 'organizer',
-      });
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500)); // 1 to 1.5 sec delay
+      await sendEmail({ to: organizerEmail, name: organizerName, slot: newlySentSlots[i], index: i + 1, total: newlySentSlots.length, timezone: resolvedTz, type: 'organizer' });
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
     }
 
     return new Response('Batch confirmation emails sent.', { status: 200 });
